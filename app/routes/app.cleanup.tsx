@@ -136,6 +136,11 @@ export default function CleanupPage() {
             Scanned {totalProducts} product(s). Found <strong>{affected.length}</strong> with a
             duplicated &ldquo;Product Features &amp; Specifications&rdquo; block from the earlier bug.
           </p>
+          <p style={{ margin: "8px 0 0", fontSize: "12px", color: "#9ca3af" }}>
+            Note: this tool only repairs that one specific duplicated-description bug. It is not a
+            general issue scanner — to see products with missing SKUs, short descriptions, alt text,
+            etc., open the <strong>Products directory</strong> and each product&rsquo;s AI Suggestions.
+          </p>
         </s-box>
 
         {affected.length > 0 && (

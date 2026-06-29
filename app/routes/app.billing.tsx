@@ -101,11 +101,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     // page) on success — that must bubble up untouched. We only catch genuine
     // errors so a failed charge (e.g. Shopify rejecting a live charge on a
     // development store) returns a readable message instead of a raw 500.
-    // Build the return URL from the ORIGIN this request actually arrived on,
-    // not process.env.SHOPIFY_APP_URL. If that env var is misconfigured (points
-    // at a different/stale Render service), Shopify would send the merchant to a
-    // dead domain after paying. The request origin is always the live app host.
-    const returnUrl = `${new URL(request.url).origin}/app/billing`;
+    // After payment Shopify navigates the TOP window to returnUrl. If we send it
+    // to the app's own host, the app loads standalone (outside the Shopify admin
+    // iframe) where the Polaris s-* web components don't render — the merchant
+    // sees a blank/"200" page. Returning to the embedded admin app URL instead
+    // loads the app inside admin where App Bridge + Polaris work.
+    const storeHandle = session.shop.replace(/\.myshopify\.com$/, "");
+    // App handle as it appears in admin.shopify.com/store/<store>/apps/<handle>.
+    // Overridable via env in case the app is renamed in the Partner Dashboard.
+    const appHandle = process.env.SHOPIFY_APP_HANDLE || "geo-engine";
+    const returnUrl = `https://admin.shopify.com/store/${storeHandle}/apps/${appHandle}/app/billing`;
 
     return await billing.request({
       plan: PLAN_NAME_BY_CODE[paidPlanCode],
