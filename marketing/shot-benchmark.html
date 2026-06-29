@@ -1,0 +1,63 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/><style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1600px;height:900px;overflow:hidden;font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+  .stage{width:1600px;height:900px;background:linear-gradient(135deg,#e7eeff,#f8fafc 55%,#eaf3ff);padding:46px 60px;display:flex;flex-direction:column}
+  .cap{display:flex;align-items:center;gap:18px;margin-bottom:26px}
+  .badge{width:60px;height:60px;border-radius:15px;position:relative;background:linear-gradient(135deg,#1e3a8a,#3b82f6);box-shadow:0 8px 20px rgba(37,99,235,.35);flex:none}
+  .badge svg{position:absolute;inset:0;width:100%;height:100%}
+  .cap h2{font-size:30px;font-weight:820;color:#0f172a;letter-spacing:-.5px}.cap p{font-size:17px;color:#475569;margin-top:3px}
+  .pill{margin-left:auto;background:#1e3a8a;color:#fff;font-size:14px;font-weight:700;padding:9px 18px;border-radius:30px}
+  .win{flex:1;background:#fff;border-radius:18px;box-shadow:0 30px 70px -25px rgba(15,23,42,.4);overflow:hidden;display:flex;flex-direction:column;border:1px solid #e2e8f0}
+  .tb{height:46px;background:#f8fafc;border-bottom:1px solid #e9eef5;display:flex;align-items:center;gap:8px;padding:0 18px;flex:none}
+  .tb i{width:12px;height:12px;border-radius:50%;display:inline-block}
+  .url{margin-left:14px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;color:#64748b;padding:5px 14px;font-family:ui-monospace,Menlo,monospace}
+  .body{flex:1;padding:34px 40px;background:#fbfcfe;display:flex;flex-direction:column;justify-content:center}
+  .widget{border:1.5px solid #e5e7eb;border-radius:16px;overflow:hidden;box-shadow:0 6px 22px rgba(0,0,0,.06);background:#fff}
+  .whead{background:linear-gradient(135deg,#1e3a8a 0%,#2563eb 60%,#3b82f6 100%);padding:24px 30px;display:flex;justify-content:space-between;align-items:center}
+  .whead .t1{color:#fff;font-weight:850;font-size:22px}.whead .t2{color:#93c5fd;font-size:15px;margin-top:4px}
+  .whead .ins{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:13px;font-weight:700;padding:8px 16px;border-radius:9px;text-transform:uppercase;letter-spacing:.5px}
+  .wbody{padding:34px 40px;display:grid;grid-template-columns:1.2fr 1fr;gap:44px;align-items:center}
+  .bar{margin-bottom:26px}.bar:last-child{margin-bottom:0}
+  .bt{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .bt .lab{font-size:16px;color:#374151;font-weight:600}
+  .bt .right{display:flex;align-items:center;gap:10px}
+  .bt .tag{font-size:12px;font-weight:800;padding:3px 9px;border-radius:6px}
+  .bt .sc{font-size:24px;font-weight:900;min-width:38px;text-align:right}
+  .track{height:18px;background:#f3f4f6;border-radius:9px;overflow:hidden}.fill{height:100%;border-radius:9px}
+  .cards{display:flex;flex-direction:column;gap:16px}
+  .c1{background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1px solid #93c5fd;border-radius:13px;padding:22px 24px;display:flex;align-items:center;gap:20px}
+  .c1 .big{font-size:46px;font-weight:900;color:#1d4ed8;line-height:1}
+  .c1 .h{font-size:15px;font-weight:800;color:#1e40af}.c1 .s{font-size:13px;color:#60a5fa;margin-top:4px}
+  .c2{background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:1px solid #6ee7b7;border-radius:13px;padding:22px 24px;display:flex;align-items:center;gap:18px}
+  .c2 .big{font-size:38px;font-weight:900;color:#059669;line-height:1}
+  .c2 .h{font-size:15px;font-weight:800;color:#065f46}.c2 .s{font-size:13px;color:#6b7280;margin-top:4px}
+</style></head>
+<body><div class="stage">
+  <div class="cap"><div class="badge"><svg viewBox="0 0 200 200" fill="none">
+    <g stroke="#fff" stroke-width="9" stroke-linecap="round" fill="none"><path d="M70 104 A 34 34 0 0 1 104 138" opacity=".95"/><path d="M70 82 A 56 56 0 0 1 126 138" opacity=".6"/><path d="M70 60 A 78 78 0 0 1 148 138" opacity=".32"/></g>
+    <circle cx="94" cy="114" r="6.5" fill="#fff"/><circle cx="110" cy="98" r="6" fill="#7dd3fc"/><circle cx="126" cy="82" r="8" fill="#34d399"/><circle cx="70" cy="138" r="17" fill="#fff"/><circle cx="70" cy="138" r="7.5" fill="#1e3a8a"/></svg></div>
+    <div><h2>Benchmark your store against the AI-first era</h2><p>Know exactly where you stand versus optimized stores and the industry baseline.</p></div>
+    <div class="pill">Benchmark</div></div>
+  <div class="win">
+    <div class="tb"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i>
+      <span class="url">admin.shopify.com / apps / geo-engine</span></div>
+    <div class="body">
+      <div class="widget">
+        <div class="whead"><div><div class="t1">AI Commerce Benchmark</div><div class="t2">See how your store stacks up in the AI-first search era</div></div>
+          <div class="ins">GEO Engine Insights</div></div>
+        <div class="wbody">
+          <div>
+            <div class="bar"><div class="bt"><span class="lab">GEO Engine users (avg)</span><span class="right"><span class="tag" style="background:#ecfdf5;color:#065f46">Target</span><span class="sc" style="color:#10b981">94</span></span></div><div class="track"><div class="fill" style="width:94%;background:#10b981"></div></div></div>
+            <div class="bar"><div class="bt"><span class="lab">Your store</span><span class="right"><span class="tag" style="background:#eff6ff;color:#1d4ed8">You</span><span class="sc" style="color:#3b82f6">91</span></span></div><div class="track"><div class="fill" style="width:91%;background:#3b82f6"></div></div></div>
+            <div class="bar"><div class="bt"><span class="lab">Unoptimized Shopify stores</span><span class="right"><span class="tag" style="background:#f3f4f6;color:#6b7280">Baseline</span><span class="sc" style="color:#9ca3af">47</span></span></div><div class="track"><div class="fill" style="width:47%;background:#d1d5db"></div></div></div>
+          </div>
+          <div class="cards">
+            <div class="c1"><div class="big">+3</div><div><div class="h">Points to GEO Engine avg</div><div class="s">Fix the issues below to close the gap fast</div></div></div>
+            <div class="c2"><div class="big">+44</div><div><div class="h">Ahead of unoptimized stores</div><div class="s">AI agents are more likely to surface your products</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div></body></html>

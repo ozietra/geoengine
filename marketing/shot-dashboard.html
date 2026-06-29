@@ -1,0 +1,80 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/><style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1600px;height:900px;overflow:hidden;font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+  .stage{width:1600px;height:900px;background:linear-gradient(135deg,#e7eeff,#f8fafc 55%,#eaf3ff);padding:46px 60px;display:flex;flex-direction:column}
+  .cap{display:flex;align-items:center;gap:18px;margin-bottom:26px}
+  .badge{width:60px;height:60px;border-radius:15px;position:relative;background:linear-gradient(135deg,#1e3a8a,#3b82f6);box-shadow:0 8px 20px rgba(37,99,235,.35);flex:none}
+  .badge svg{position:absolute;inset:0;width:100%;height:100%}
+  .cap h2{font-size:30px;font-weight:820;color:#0f172a;letter-spacing:-.5px}
+  .cap p{font-size:17px;color:#475569;margin-top:3px}
+  .pill{margin-left:auto;background:#1e3a8a;color:#fff;font-size:14px;font-weight:700;padding:9px 18px;border-radius:30px}
+  .win{flex:1;background:#fff;border-radius:18px;box-shadow:0 30px 70px -25px rgba(15,23,42,.4);overflow:hidden;display:flex;flex-direction:column;border:1px solid #e2e8f0}
+  .tb{height:46px;background:#f8fafc;border-bottom:1px solid #e9eef5;display:flex;align-items:center;gap:8px;padding:0 18px;flex:none}
+  .tb i{width:12px;height:12px;border-radius:50%;display:inline-block}
+  .url{margin-left:14px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;color:#64748b;padding:5px 14px;font-family:ui-monospace,Menlo,monospace}
+  .body{flex:1;padding:24px 28px;display:flex;flex-direction:column;gap:18px;background:#fbfcfe}
+  .phead{display:flex;align-items:center;justify-content:space-between}
+  .phead h3{font-size:22px;font-weight:800;color:#111827}
+  .btn{background:#1f2937;color:#fff;font-size:14px;font-weight:600;padding:10px 18px;border-radius:9px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .box{background:#fff;border:1px solid #e8edf3;border-radius:12px;padding:20px}
+  .lbl{font-size:12px;font-weight:700;text-transform:uppercase;color:#6b7280;letter-spacing:.4px}
+  .dialwrap{display:flex;align-items:center;gap:26px;margin-top:6px}
+  .dial{width:150px;height:150px;border-radius:50%;position:relative;background:conic-gradient(#10b981 327deg,#e5e7eb 327deg);display:flex;align-items:center;justify-content:center;flex:none}
+  .dial .in{width:124px;height:124px;border-radius:50%;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .dial .n{font-size:46px;font-weight:850;color:#111827}
+  .dial .l{font-size:11px;font-weight:800;color:#059669;background:#ecfdf5;padding:2px 10px;border-radius:10px;margin-top:2px}
+  .dmeta p{font-size:14px;color:#475569;line-height:1.6}
+  .dmeta .big{font-size:15px;color:#111827;font-weight:700;margin-bottom:6px}
+  .bars{display:flex;flex-direction:column;gap:12px;margin-top:14px}
+  .bar .t{display:flex;justify-content:space-between;font-size:13px;color:#374151;font-weight:600;margin-bottom:5px}
+  .track{height:8px;background:#eef2f7;border-radius:5px;overflow:hidden}.fill{height:100%;border-radius:5px}
+  .metrics{display:flex;flex-direction:column;gap:14px;margin-top:14px;font-size:15px;color:#374151}
+  .metrics div{display:flex;justify-content:space-between}
+  .metrics b{font-weight:800}
+  .dash{border-bottom:1.5px dashed #e5e7eb;margin:2px 0}
+</style></head>
+<body><div class="stage">
+  <div class="cap"><div class="badge"><svg viewBox="0 0 200 200" fill="none">
+    <g stroke="#fff" stroke-width="9" stroke-linecap="round" fill="none"><path d="M70 104 A 34 34 0 0 1 104 138" opacity=".95"/><path d="M70 82 A 56 56 0 0 1 126 138" opacity=".6"/><path d="M70 60 A 78 78 0 0 1 148 138" opacity=".32"/></g>
+    <circle cx="94" cy="114" r="6.5" fill="#fff"/><circle cx="110" cy="98" r="6" fill="#7dd3fc"/><circle cx="126" cy="82" r="8" fill="#34d399"/><circle cx="70" cy="138" r="17" fill="#fff"/><circle cx="70" cy="138" r="7.5" fill="#1e3a8a"/></svg></div>
+    <div><h2>One score for your whole catalog's AI readiness</h2><p>See exactly how ready your store is for AI-powered shopping — at a glance.</p></div>
+    <div class="pill">Dashboard</div></div>
+  <div class="win">
+    <div class="tb"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i>
+      <span class="url">admin.shopify.com / apps / geo-engine</span></div>
+    <div class="body">
+      <div class="phead"><h3>GEO Engine: AI Commerce Catalog Monitor</h3><div class="btn">Scan Catalog Now</div></div>
+      <div class="row">
+        <div class="box"><div class="lbl">Store AI Readiness Score</div>
+          <div class="dialwrap"><div class="dial"><div class="in"><div class="n">91</div><div class="l">EXCELLENT</div></div></div>
+            <div class="dmeta"><div class="big">142 products scanned</div><p>Your catalog is highly visible to AI shopping agents and LLM search engines.</p></div></div></div>
+        <div class="box"><div class="lbl">Category Evaluation</div>
+          <div class="bars">
+            <div class="bar"><div class="t"><span>Product Title Quality</span><span>96%</span></div><div class="track"><div class="fill" style="width:96%;background:#10b981"></div></div></div>
+            <div class="bar"><div class="t"><span>Descriptions Richness</span><span>88%</span></div><div class="track"><div class="fill" style="width:88%;background:#3b82f6"></div></div></div>
+            <div class="bar"><div class="t"><span>Media Assets & Alt Texts</span><span>84%</span></div><div class="track"><div class="fill" style="width:84%;background:#3b82f6"></div></div></div>
+            <div class="bar"><div class="t"><span>Variant Inventory Specs</span><span>93%</span></div><div class="track"><div class="fill" style="width:93%;background:#10b981"></div></div></div>
+            <div class="bar"><div class="t"><span>Structured Data Taxonomies</span><span>89%</span></div><div class="track"><div class="fill" style="width:89%;background:#3b82f6"></div></div></div>
+          </div></div>
+      </div>
+      <div class="row">
+        <div class="box"><div class="lbl">Readiness Score History</div>
+          <svg viewBox="0 0 500 120" style="width:100%;height:118px;margin-top:6px">
+            <line x1="20" y1="20" x2="480" y2="20" stroke="#f3f4f6"/><line x1="20" y1="60" x2="480" y2="60" stroke="#f3f4f6"/><line x1="20" y1="100" x2="480" y2="100" stroke="#e5e7eb"/>
+            <polygon points="20,100 20,78 135,66 250,48 365,33 480,24 480,100" fill="#3b82f6" opacity=".12"/>
+            <polyline points="20,78 135,66 250,48 365,33 480,24" fill="none" stroke="#3b82f6" stroke-width="3"/>
+            <circle cx="20" cy="78" r="4.5" fill="#3b82f6" stroke="#fff" stroke-width="2"/><circle cx="135" cy="66" r="4.5" fill="#3b82f6" stroke="#fff" stroke-width="2"/><circle cx="250" cy="48" r="4.5" fill="#3b82f6" stroke="#fff" stroke-width="2"/><circle cx="365" cy="33" r="4.5" fill="#3b82f6" stroke="#fff" stroke-width="2"/><circle cx="480" cy="24" r="5" fill="#10b981" stroke="#fff" stroke-width="2"/></svg></div>
+        <div class="box"><div class="lbl">Catalog Completions</div>
+          <div class="metrics">
+            <div><span>Critical issues (AI Blockers)</span><b style="color:#ef4444">2</b></div>
+            <div><span>Warning indicators</span><b style="color:#f59e0b">9</b></div>
+            <div><span>Information guidelines</span><b style="color:#3b82f6">5</b></div>
+            <div class="dash"></div>
+            <div><span style="font-weight:700">Store profile tier</span><b style="color:#10b981">GROWTH</b></div>
+          </div></div>
+      </div>
+    </div>
+  </div>
+</div></body></html>

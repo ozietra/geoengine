@@ -1,0 +1,172 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Session {
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
+  refreshToken        String?
+  refreshTokenExpires DateTime?
+}
+
+model StoreProfile {
+  id              String         @id @default(uuid())
+  shop            String         @unique
+  installedAt     DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  plan            String         @default("FREE") // FREE, STARTER, GROWTH, UNLIMITED
+  productIdCount  Int            @default(0)
+  overallScore    Float          @default(0.0)
+  lastScannedAt   DateTime?
+  scanStatus      String         @default("IDLE") // IDLE, SCANNING, COMPLETED, FAILED
+  scans           Scan[]
+  scanHistories   ScanHistory[]
+  competitors     Competitor[]
+
+  @@index([shop])
+}
+
+model Scan {
+  id                  String         @id @default(uuid())
+  storeId             String
+  store               StoreProfile   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  scannedAt           DateTime       @default(now())
+  totalProducts       Int
+  overallScore        Float
+  titleScore          Float
+  descriptionScore    Float
+  mediaScore          Float
+  variantScore        Float
+  structuredDataScore Float
+  policyScore         Float
+  criticalIssuesCount Int
+  warningIssuesCount  Int
+  infoIssuesCount     Int
+  productScans        ProductScan[]
+  issues              ScanIssue[]
+
+  @@index([storeId])
+  @@index([scannedAt])
+}
+
+model ProductScan {
+  id                  String         @id @default(uuid())
+  scanId              String
+  scan                Scan           @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  shopifyProductId    String         // e.g. gid://shopify/Product/123456
+  title               String
+  handle              String
+  overallScore        Float
+  titleScore          Float
+  descriptionScore    Float
+  mediaScore          Float
+  variantScore        Float
+  structuredDataScore Float
+  issues              ScanIssue[]
+  aiSuggestions       AISuggestion[]
+
+  @@index([scanId])
+  @@index([shopifyProductId])
+}
+
+model ScanIssue {
+  id                  String       @id @default(uuid())
+  scanId              String?      // Links store-level policy issues to a specific scan
+  scan                Scan?        @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  productScanId       String?
+  productScan         ProductScan? @relation(fields: [productScanId], references: [id], onDelete: Cascade)
+  type                String       // e.g. "MISSING_ALT_TEXT", "NO_GTIN"
+  category            String       // TITLE, DESCRIPTION, MEDIA, VARIANTS, STRUCTURED_DATA, POLICY
+  severity            String       // CRITICAL, WARNING, INFO
+  impact              String       // HIGH, MEDIUM, LOW
+  difficulty          String       // EASY, MEDIUM, HARD
+  timeEstimatedSec    Int
+  message             String
+  details             String
+  hasOneClickFix      Boolean      @default(false)
+  resolved            Boolean      @default(false)
+  resolvedAt          DateTime?
+
+  @@index([scanId])
+  @@index([productScanId])
+  @@index([severity])
+  @@index([category])
+}
+
+model AISuggestion {
+  id                  String       @id @default(uuid())
+  productScanId       String
+  productScan         ProductScan  @relation(fields: [productScanId], references: [id], onDelete: Cascade)
+  fieldType           String       // TITLE, DESCRIPTION, ALT_TEXT, METADATA
+  originalContent     String?
+  suggestedContent    String
+  merchantComment     String?
+  status              String       @default("PENDING") // PENDING, ACCEPTED, REJECTED, EDITED
+  appliedAt           DateTime?
+  metafieldNamespace  String?
+  metafieldKey        String?
+  metafieldValueType  String?      // e.g. "single_line_text_field"
+
+  @@index([productScanId])
+  @@index([status])
+}
+
+model ScanHistory {
+  id              String       @id @default(uuid())
+  storeId         String
+  store           StoreProfile @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  date            DateTime
+  overallScore    Float
+  criticalIssues  Int
+  warningIssues   Int
+  resolvedIssues  Int
+
+  @@unique([storeId, date])
+  @@index([storeId])
+}
+
+model Competitor {
+  id              String            @id @default(uuid())
+  storeId         String
+  store           StoreProfile      @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  domain          String
+  name            String
+  addedAt         DateTime          @default(now())
+  scans           CompetitorScan[]
+
+  @@index([storeId])
+}
+
+model CompetitorScan {
+  id              String     @id @default(uuid())
+  competitorId    String
+  competitor      Competitor @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+  scannedAt       DateTime   @default(now())
+  overallScore    Float
+  completeness    Float
+  mediaScore      Float
+  structuredScore Float
+
+  @@index([competitorId])
+}

@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GEO Engine — Generative Engine Optimization for Shopify</title>
+<meta name="description" content="GEO Engine scores your Shopify catalog for AI readiness and gets your products recommended by ChatGPT, Gemini, Perplexity, Claude and Google AI Overviews. Includes Agentic Storefront llms.txt." />
+<link rel="icon" href="assets/icon.png" />
+<meta property="og:title" content="GEO Engine — Generative Engine Optimization for Shopify" />
+<meta property="og:description" content="Get your catalog recommended by AI shopping engines." />
+<meta property="og:image" content="assets/feature.png" />
+<style>
+  :root{
+    --navy:#0f172a; --blue900:#1e3a8a; --blue600:#2563eb; --blue500:#3b82f6;
+    --cyan:#7dd3fc; --green:#10b981; --green2:#34d399; --ink:#111827; --muted:#64748b;
+    --line:#e5e7eb; --bg:#f8fafc; --card:#ffffff;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+  .btn{display:inline-flex;align-items:center;gap:10px;font-weight:700;font-size:16px;padding:14px 26px;border-radius:12px;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease;border:none}
+  .btn:hover{transform:translateY(-2px)}
+  .btn-primary{background:#fff;color:var(--blue900);box-shadow:0 10px 30px rgba(0,0,0,.18)}
+  .btn-shopify{background:#10b981;color:#fff;box-shadow:0 10px 30px rgba(16,185,129,.35)}
+  .btn-ghost{background:rgba(255,255,255,.10);color:#fff;border:1px solid rgba(255,255,255,.25)}
+  .btn-dark{background:var(--ink);color:#fff}
+  .badge{width:42px;height:42px;border-radius:11px;position:relative;background:linear-gradient(135deg,var(--blue900),var(--blue500));flex:none}
+  .badge svg{position:absolute;inset:0;width:100%;height:100%}
+  .eyebrow{font-size:13px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--blue600)}
+
+  /* Header */
+  header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .nav{display:flex;align-items:center;gap:14px;height:70px}
+  .brand{display:flex;align-items:center;gap:12px;font-weight:800;font-size:20px;letter-spacing:-.3px}
+  .nav .links{margin-left:28px;display:flex;gap:26px;font-weight:600;color:var(--muted);font-size:15px}
+  .nav .links a:hover{color:var(--ink)}
+  .nav .right{margin-left:auto;display:flex;gap:12px;align-items:center}
+  .nav .btn{padding:11px 20px;font-size:15px}
+  @media(max-width:820px){.nav .links{display:none}}
+
+  /* Hero */
+  .hero{position:relative;overflow:hidden;background:linear-gradient(125deg,#0f172a 0%,#16275c 46%,#1e40af 80%,#2563eb 100%);color:#fff}
+  .hero::before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.05) 2px,transparent 2px);background-size:42px 42px}
+  .hero .glow{position:absolute;width:620px;height:620px;right:-180px;top:-160px;border-radius:50%;background:radial-gradient(circle,rgba(59,130,246,.45),transparent 62%)}
+  .hero .wrap{position:relative;display:grid;grid-template-columns:1.05fr .95fr;gap:50px;align-items:center;padding:84px 24px 92px}
+  .hero h1{font-size:54px;line-height:1.07;font-weight:850;letter-spacing:-1.4px}
+  .hero h1 .hl{color:var(--green2)}
+  .hero p.lead{margin-top:22px;font-size:20px;color:#cbd5e1;max-width:560px}
+  .hero .cta{margin-top:34px;display:flex;gap:14px;flex-wrap:wrap}
+  .hero .trust{margin-top:30px;font-size:13.5px;color:#93c5fd;font-weight:600}
+  .hero .trust b{color:#e0f2fe}
+  @media(max-width:900px){.hero .wrap{grid-template-columns:1fr;gap:36px;padding:60px 24px}.hero h1{font-size:40px}}
+
+  /* Hero card */
+  .pcard{background:#fff;border-radius:22px;padding:26px;box-shadow:0 40px 90px -20px rgba(0,0,0,.55);transform:rotate(-2deg);color:var(--ink)}
+  .pcard h3{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);text-align:center}
+  .dial{width:166px;height:166px;border-radius:50%;margin:16px auto 6px;position:relative;background:conic-gradient(var(--green) 327deg,#e5e7eb 327deg);display:flex;align-items:center;justify-content:center}
+  .dial .in{width:138px;height:138px;border-radius:50%;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .dial .n{font-size:50px;font-weight:850}
+  .dial .l{font-size:11px;font-weight:800;color:#059669;background:#ecfdf5;padding:3px 12px;border-radius:12px;margin-top:2px}
+  .pbars{margin-top:14px;display:flex;flex-direction:column;gap:11px}
+  .pbar .t{display:flex;justify-content:space-between;font-size:13px;color:#374151;margin-bottom:5px;font-weight:600}
+  .pbar .track{height:8px;background:#f1f5f9;border-radius:5px;overflow:hidden}.pbar .fill{height:100%;border-radius:5px}
+  .ppub{margin-top:16px;display:flex;align-items:center;gap:10px;background:#0f172a;border-radius:11px;padding:11px 14px}
+  .ppub code{color:var(--cyan);font-size:12.5px;font-family:ui-monospace,Menlo,monospace}
+  .ppub .ok{margin-left:auto;color:var(--green2);font-size:11px;font-weight:800}
+
+  /* Engines bar */
+  .engines{background:#fff;border-bottom:1px solid var(--line)}
+  .engines .wrap{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;padding:22px 24px;color:var(--muted);font-weight:700;font-size:15px}
+  .engines .e{padding:6px 14px;border:1px solid var(--line);border-radius:30px;background:var(--bg)}
+
+  /* Sections */
+  section{padding:84px 0}
+  .shead{text-align:center;max-width:720px;margin:0 auto 52px}
+  .shead h2{font-size:40px;font-weight:850;letter-spacing:-1px;margin-top:10px}
+  .shead p{font-size:18px;color:var(--muted);margin-top:14px}
+
+  /* Feature cards */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  .fcard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px;transition:transform .15s,box-shadow .15s}
+  .fcard:hover{transform:translateY(-4px);box-shadow:0 16px 40px -16px rgba(15,23,42,.25)}
+  .fcard .ic{width:50px;height:50px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:24px;background:linear-gradient(135deg,#eff6ff,#dbeafe);margin-bottom:18px}
+  .fcard h3{font-size:19px;font-weight:800}
+  .fcard p{color:var(--muted);font-size:15px;margin-top:8px}
+  .fcard.new{border-color:#a7f3d0;background:linear-gradient(180deg,#f0fdf4,#fff)}
+  .fcard .tag{display:inline-block;font-size:11px;font-weight:800;color:#059669;background:#d1fae5;padding:3px 9px;border-radius:20px;margin-bottom:12px;letter-spacing:.5px}
+
+  /* Showcase alternating */
+  .show{display:grid;grid-template-columns:1fr 1.15fr;gap:48px;align-items:center;margin-bottom:64px}
+  .show:last-child{margin-bottom:0}
+  .show.rev{grid-template-columns:1.15fr 1fr}
+  .show.rev .txt{order:2}
+  .show .txt h3{font-size:30px;font-weight:850;letter-spacing:-.6px;margin-top:8px}
+  .show .txt p{color:var(--muted);font-size:17px;margin-top:14px}
+  .show .txt ul{margin-top:18px;list-style:none;display:flex;flex-direction:column;gap:11px}
+  .show .txt li{display:flex;gap:11px;font-size:15.5px;font-weight:600}
+  .show .txt li .ck{color:var(--green);font-weight:900}
+  .show img{width:100%;border-radius:14px;box-shadow:0 30px 70px -28px rgba(15,23,42,.5);border:1px solid var(--line);display:block}
+  @media(max-width:900px){.show,.show.rev{grid-template-columns:1fr;gap:24px}.show.rev .txt{order:0}}
+
+  /* Benchmark band */
+  .band{background:linear-gradient(135deg,#0f172a,#1e3a8a 60%,#2563eb);color:#fff;border-radius:24px;padding:54px;display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}
+  @media(max-width:900px){.band{grid-template-columns:1fr;padding:34px}}
+  .band h2{font-size:34px;font-weight:850;letter-spacing:-.8px}
+  .band p{color:#cbd5e1;margin-top:14px;font-size:17px}
+  .stats{display:flex;flex-direction:column;gap:16px}
+  .stat{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:14px;padding:18px 22px;display:flex;align-items:center;gap:20px}
+  .stat .v{font-size:42px;font-weight:900;line-height:1;flex:none;width:120px}
+  .stat .l{font-size:14px;color:#dbeafe}
+
+  /* Pricing */
+  .plans{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+  @media(max-width:900px){.plans{grid-template-columns:1fr 1fr}}
+  @media(max-width:560px){.plans{grid-template-columns:1fr}}
+  .plan{background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:26px 22px;display:flex;flex-direction:column;position:relative}
+  .plan.pop{border:2px solid #8b5cf6;box-shadow:0 14px 40px -14px rgba(139,92,246,.35)}
+  .plan .pb{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:#8b5cf6;color:#fff;font-size:11px;font-weight:800;padding:5px 14px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+  .plan .pn{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.6px}
+  .plan .pp{font-size:36px;font-weight:900;margin-top:8px;letter-spacing:-1px}.plan .pp small{font-size:14px;color:var(--muted);font-weight:600}
+  .plan .pl{font-size:12.5px;font-weight:700;color:var(--muted);background:var(--bg);padding:5px 10px;border-radius:7px;display:inline-block;margin:12px 0}
+  .plan ul{list-style:none;font-size:14px;color:#475569;display:flex;flex-direction:column;gap:9px;margin-top:6px}
+  .plan li{display:flex;gap:8px}.plan li .ck{font-weight:900;flex:none}
+
+  /* CTA band */
+  .ctaband{text-align:center;background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff;border-radius:24px;padding:60px 30px}
+  .ctaband h2{font-size:38px;font-weight:850;letter-spacing:-1px}
+  .ctaband p{color:#dbeafe;font-size:18px;margin:14px 0 28px}
+
+  /* Footer */
+  footer{background:var(--navy);color:#94a3b8;padding:48px 0 36px;margin-top:84px}
+  footer .top{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;padding-bottom:26px;border-bottom:1px solid rgba(255,255,255,.1)}
+  footer .brand{color:#fff}
+  footer .flinks{display:flex;gap:24px;font-weight:600;font-size:15px}
+  footer .flinks a:hover{color:#fff}
+  footer .copy{padding-top:22px;font-size:13.5px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+</style>
+</head>
+<body>
+<!-- ▼▼ App Store linkini buradan değiştir (yayınlanınca kesin URL'i koy) ▼▼ -->
+<!-- Tüm "Add to Shopify" butonları https://apps.shopify.com/geo-engine adresine gider -->
+
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="#top">
+      <span class="badge"><svg viewBox="0 0 200 200" fill="none"><g stroke="#fff" stroke-width="9" stroke-linecap="round" fill="none"><path d="M70 104 A 34 34 0 0 1 104 138" opacity=".95"/><path d="M70 82 A 56 56 0 0 1 126 138" opacity=".6"/><path d="M70 60 A 78 78 0 0 1 148 138" opacity=".32"/></g><circle cx="94" cy="114" r="6.5" fill="#fff"/><circle cx="110" cy="98" r="6" fill="#7dd3fc"/><circle cx="126" cy="82" r="8" fill="#34d399"/><circle cx="70" cy="138" r="17" fill="#fff"/><circle cx="70" cy="138" r="7.5" fill="#1e3a8a"/></svg></span>
+      GEO Engine
+    </a>
+    <nav class="links">
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="#agentic">Agentic Storefront</a>
+      <a href="#pricing">Pricing</a>
+    </nav>
+    <div class="right">
+      <a class="btn btn-shopify" href="https://apps.shopify.com/geo-engine" target="_blank" rel="noopener">Add to Shopify →</a>
+    </div>
+  </div>
+</header>
+
+<a id="top"></a>
+<section class="hero" style="padding:0">
+  <div class="glow"></div>
+  <div class="wrap">
+    <div>
+      <div class="eyebrow" style="color:#93c5fd">Generative Engine Optimization</div>
+      <h1>Get your catalog <span class="hl">recommended</span> by AI shopping engines.</h1>
+      <p class="lead">ChatGPT Shopping, Gemini, Perplexity, Claude and Google AI Overviews now decide what shoppers see. GEO Engine scores, fixes and publishes your Shopify catalog so the agents pick you.</p>
+      <div class="cta">
+        <a class="btn btn-shopify" href="https://apps.shopify.com/geo-engine" target="_blank" rel="noopener">Add to Shopify — Free</a>
+        <a class="btn btn-ghost" href="#features">See features</a>
+      </div>
+      <div class="trust">Optimized for <b>ChatGPT · Gemini · Perplexity · Claude · Google AI Overviews</b></div>
+    </div>
+    <div>
+      <div class="pcard">
+        <h3>Store AI Readiness Score</h3>
+        <div class="dial"><div class="in"><div class="n">91</div><div class="l">EXCELLENT</div></div></div>
+        <div class="pbars">
+          <div class="pbar"><div class="t"><span>Descriptions</span><span>88%</span></div><div class="track"><div class="fill" style="width:88%;background:#3b82f6"></div></div></div>
+          <div class="pbar"><div class="t"><span>Media &amp; Alt text</span><span>84%</span></div><div class="track"><div class="fill" style="width:84%;background:#3b82f6"></div></div></div>
+          <div class="pbar"><div class="t"><span>Structured data</span><span>100%</span></div><div class="track"><div class="fill" style="width:100%;background:#10b981"></div></div></div>
+        </div>
+        <div class="ppub"><code>/apps/geo/llms.txt</code><span class="ok">● PUBLISHED</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="engines">
+  <div class="wrap">
+    <span style="color:#94a3b8;font-weight:600">Built for the AI-first search era:</span>
+    <span class="e">ChatGPT Shopping</span><span class="e">Google AI Overviews</span><span class="e">Gemini</span><span class="e">Perplexity</span><span class="e">Claude</span>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="wrap">
+    <div class="shead">
+      <div class="eyebrow">Everything you need</div>
+      <h2>One app to win AI-powered discovery</h2>
+      <p>GEO Engine evaluates your entire catalog, tells you exactly what to fix, and rewrites it for the machines that now drive shopping.</p>
+    </div>
+    <div class="grid">
+      <div class="fcard"><div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="20" x2="6" y2="14"/><line x1="12" y1="20" x2="12" y2="8"/><line x1="18" y1="20" x2="18" y2="4"/></svg></div><h3>AI Readiness Score</h3><p>One 0–100 score for your whole catalog, broken down by titles, descriptions, media, variants, structured data and policies.</p></div>
+      <div class="fcard"><div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><h3>Prioritized fix list</h3><p>Every issue ranked by ROI — highest impact, lowest effort first — so you raise your score fast.</p></div>
+      <div class="fcard"><div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.9L18.7 9l-4.9 1.8L12 16l-1.8-5.2L5.3 9l4.9-1.1L12 3z"/><path d="M19 14l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7.7-2z"/></svg></div><h3>One-click AI suggestions</h3><p>AI rewrites titles, descriptions and image alt text, then writes the approved changes straight back to Shopify.</p></div>
+      <div class="fcard new"><span class="tag">NEW</span><h3>Agentic Storefront</h3><p>Auto-publish an <code>llms.txt</code> on your storefront so AI agents understand your store instantly.</p></div>
+      <div class="fcard"><div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M8.21 13.89L7 22l5-3 5 3-1.21-8.12"/></svg></div><h3>AI Commerce Benchmark</h3><p>See how you compare to optimized stores (avg 94) and the industry baseline (47).</p></div>
+      <div class="fcard"><div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></div><h3>Weekly monitoring</h3><p>Automatic re-scans and regression alerts so your score never quietly slips.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS / SHOWCASE -->
+<section id="how" style="background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+  <div class="wrap">
+    <div class="shead">
+      <div class="eyebrow">How it works</div>
+      <h2>Scan. Fix. Get recommended.</h2>
+    </div>
+
+    <div class="show">
+      <div class="txt">
+        <div class="eyebrow">Step 1 — Scan</div>
+        <h3>One score for your whole catalog's AI readiness</h3>
+        <p>Run a scan and instantly see how visible your store is to AI shopping agents — with a category-by-category breakdown and a trend over time.</p>
+        <ul><li><span class="ck">✓</span> Titles, descriptions, media, variants, structured data &amp; policies</li><li><span class="ck">✓</span> Critical AI blockers flagged first</li></ul>
+      </div>
+      <img src="assets/shot-dashboard.png" alt="GEO Engine dashboard with AI Readiness Score" loading="lazy" />
+    </div>
+
+    <div class="show rev">
+      <img src="assets/shot-recommendations.png" alt="Prioritized AI recommendations" loading="lazy" />
+      <div class="txt">
+        <div class="eyebrow">Step 2 — Fix</div>
+        <h3>A prioritized, ROI-ranked fix list</h3>
+        <p>No guesswork. GEO Engine shows the highest-impact, easiest wins first and applies AI-written fixes back to Shopify in one click.</p>
+        <ul><li><span class="ck">✓</span> Severity &amp; difficulty on every issue</li><li><span class="ck">✓</span> One-click write-back to your products</li></ul>
+      </div>
+    </div>
+
+    <div class="show">
+      <div class="txt">
+        <div class="eyebrow">Step 3 — Benchmark</div>
+        <h3>Know exactly where you stand</h3>
+        <p>Benchmark your store against optimized GEO Engine users and unoptimized stores, and watch the gap close as you fix issues.</p>
+        <ul><li><span class="ck">✓</span> Live comparison vs. industry baseline</li><li><span class="ck">✓</span> Points-to-target guidance</li></ul>
+      </div>
+      <img src="assets/shot-benchmark.png" alt="AI Commerce Benchmark" loading="lazy" />
+    </div>
+  </div>
+</section>
+
+<!-- AGENTIC -->
+<section id="agentic">
+  <div class="wrap">
+    <div class="band">
+      <div>
+        <div class="eyebrow" style="color:#93c5fd">New · Agentic Storefront</div>
+        <h2 style="margin-top:10px">Publish an llms.txt your store can be read by</h2>
+        <p>An <strong>llms.txt</strong> is the AI-era equivalent of a sitemap. GEO Engine generates one live from your real catalog and serves it on your own storefront domain — so AI agents discover, compare and recommend your products accurately. Zero theme code required.</p>
+        <div style="margin-top:26px"><a class="btn btn-primary" href="https://apps.shopify.com/geo-engine" target="_blank" rel="noopener">Add to Shopify →</a></div>
+      </div>
+      <img src="assets/shot-agentic.png" alt="Agentic Storefront llms.txt" loading="lazy" style="width:100%;border-radius:14px;box-shadow:0 30px 70px -28px rgba(0,0,0,.6)" />
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing" style="background:#fff;border-top:1px solid var(--line)">
+  <div class="wrap">
+    <div class="shead">
+      <div class="eyebrow">Pricing</div>
+      <h2>Start free. Scale with your catalog.</h2>
+      <p>Every plan is billed securely through Shopify. Cancel anytime.</p>
+    </div>
+    <div class="plans">
+      <div class="plan"><div class="pn" style="color:#6b7280">Free</div><div class="pp">$0<small>/mo</small></div><span class="pl">Up to 5 products</span>
+        <ul><li><span class="ck" style="color:#6b7280">✓</span>Core Readiness evaluation</li><li><span class="ck" style="color:#6b7280">✓</span>Local recommendations</li><li><span class="ck" style="color:#6b7280">✓</span>Manual catalog scan</li><li><span class="ck" style="color:#6b7280">✓</span>Alt text coverage report</li></ul></div>
+      <div class="plan"><div class="pn" style="color:#3b82f6">Starter</div><div class="pp">$3.99<small>/mo</small></div><span class="pl">Up to 100 products</span>
+        <ul><li><span class="ck" style="color:#3b82f6">✓</span>Everything in Free</li><li><span class="ck" style="color:#3b82f6">✓</span>Full AI Suggestion Pipeline</li><li><span class="ck" style="color:#3b82f6">✓</span>Weekly auto monitoring</li><li><span class="ck" style="color:#3b82f6">✓</span>1-click catalog write-back</li></ul></div>
+      <div class="plan pop"><div class="pb">Most Popular</div><div class="pn" style="color:#8b5cf6">Growth</div><div class="pp">$9.99<small>/mo</small></div><span class="pl">Up to 1,000 products</span>
+        <ul><li><span class="ck" style="color:#8b5cf6">✓</span>Everything in Starter</li><li><span class="ck" style="color:#8b5cf6">✓</span>Bulk AI review &amp; apply</li><li><span class="ck" style="color:#8b5cf6">✓</span>Monthly health reports</li><li><span class="ck" style="color:#8b5cf6">✓</span>Regression alarms</li></ul></div>
+      <div class="plan"><div class="pn" style="color:#10b981">Unlimited</div><div class="pp">$29.99<small>/mo</small></div><span class="pl">Unlimited products</span>
+        <ul><li><span class="ck" style="color:#10b981">✓</span>Everything in Growth</li><li><span class="ck" style="color:#10b981">✓</span>Dedicated API throughput</li><li><span class="ck" style="color:#10b981">✓</span>Webhook schema monitors</li><li><span class="ck" style="color:#10b981">✓</span>24/7 priority support</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section>
+  <div class="wrap">
+    <div class="ctaband">
+      <h2>Be the store the AI recommends.</h2>
+      <p>Install GEO Engine and run your first AI readiness scan in under a minute.</p>
+      <a class="btn btn-shopify" href="https://apps.shopify.com/geo-engine" target="_blank" rel="noopener" style="font-size:18px;padding:16px 32px">Add to Shopify — Free</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="top">
+      <a class="brand" href="#top" style="display:flex;align-items:center;gap:12px;font-weight:800;font-size:19px">
+        <span class="badge"><svg viewBox="0 0 200 200" fill="none"><g stroke="#fff" stroke-width="9" stroke-linecap="round" fill="none"><path d="M70 104 A 34 34 0 0 1 104 138" opacity=".95"/><path d="M70 82 A 56 56 0 0 1 126 138" opacity=".6"/><path d="M70 60 A 78 78 0 0 1 148 138" opacity=".32"/></g><circle cx="94" cy="114" r="6.5" fill="#fff"/><circle cx="110" cy="98" r="6" fill="#7dd3fc"/><circle cx="126" cy="82" r="8" fill="#34d399"/><circle cx="70" cy="138" r="17" fill="#fff"/><circle cx="70" cy="138" r="7.5" fill="#1e3a8a"/></svg></span>
+        GEO Engine
+      </a>
+      <div class="flinks">
+        <a href="#features">Features</a>
+        <a href="#pricing">Pricing</a>
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="https://apps.shopify.com/geo-engine" target="_blank" rel="noopener">Get the app</a>
+      </div>
+    </div>
+    <div class="copy">
+      <span>© 2026 GEO Engine. Generative Engine Optimization for Shopify.</span>
+      <span>Not affiliated with or endorsed by Shopify, OpenAI, Google, Anthropic or Perplexity.</span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>
