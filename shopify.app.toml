@@ -2,7 +2,7 @@
 
 client_id = "a63ee7487084e0fe28443f178bfed4e5"
 name = "GEO Engine"
-application_url = "https://example.com"
+application_url = "https://geoengine-d1o3.onrender.com"
 embedded = true
 
 [access_scopes]
@@ -64,13 +64,16 @@ api_version = "2026-04"
   topics = [ "shop/redact" ]
 
 [auth]
-redirect_urls = [ "https://example.com/api/auth" ]
+redirect_urls = [
+  "https://geoengine-d1o3.onrender.com/auth/callback",
+  "https://geoengine-d1o3.onrender.com/api/auth"
+]
 
 # Agentic Storefront — serves the merchant's llms.txt on their own storefront
 # domain at https://{store}/apps/geo/llms.txt so AI agents and LLM crawlers can
 # read the catalog. Requests are forwarded to /proxy/* in this app.
 [app_proxy]
-url = "https://example.com/proxy"
+url = "https://geoengine-d1o3.onrender.com/proxy"
 subpath = "geo"
 prefix = "apps"
 

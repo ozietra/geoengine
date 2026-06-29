@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import prisma from "~/db.server";
+import { callChatJSON, hasAIProviders } from "./providers.server";
 
 interface AISuggestionResponse {
   suggestedTitle: string;
@@ -8,6 +9,23 @@ interface AISuggestionResponse {
     imageId: string;
     altText: string;
   }>;
+}
+
+// Tolerant JSON parse: some models (especially free ones) wrap their output in
+// ```json fences or add a sentence around the object. Extract and parse the
+// actual JSON object so the provider chain stays interchangeable.
+function parseSuggestionJSON(raw: string): AISuggestionResponse {
+  let text = raw.trim();
+  const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence) text = fence[1].trim();
+  if (!text.startsWith("{")) {
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+    if (start !== -1 && end !== -1 && end > start) {
+      text = text.slice(start, end + 1);
+    }
+  }
+  return JSON.parse(text) as AISuggestionResponse;
 }
 
 // Helper to generate mock suggestions when the OpenAI API key is missing.
@@ -120,20 +138,20 @@ export async function generateAISuggestions(productScanId: string): Promise<void
     return;
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
   const plan = productScan.scan.store.plan || "FREE";
   let suggestions: AISuggestionResponse;
 
   // The FREE plan only includes "Deterministic local recommendations" (see
-  // the Billing page) - it must never trigger a real (paid) AI call, even if
-  // OPENAI_API_KEY happens to be configured in this environment. Paid plans
-  // still fall back to the same deterministic generator if the key is
-  // missing or the OpenAI call fails.
-  if (!apiKey || plan === "FREE") {
+  // the Billing page) - it must never trigger a real AI call, even if provider
+  // keys happen to be configured. Paid plans use the AI provider chain
+  // (Groq / OpenRouter / OpenAI) with automatic multi-key fallback, and still
+  // fall back to the same deterministic generator if no provider is configured
+  // or every key fails (e.g. all rate limited).
+  if (!hasAIProviders() || plan === "FREE") {
     if (plan === "FREE") {
       console.log(`[AI Pipeline] Shop ${shop} is on the FREE plan - using deterministic suggestions only.`);
     } else {
-      console.warn("[AI Pipeline] OPENAI_API_KEY is not defined. Using local fallback rules.");
+      console.warn("[AI Pipeline] No AI provider configured. Using local fallback rules.");
     }
     suggestions = generateMockSuggestions(
       productScan.title,
@@ -144,12 +162,10 @@ export async function generateAISuggestions(productScanId: string): Promise<void
     );
   } else {
     try {
-      const payload = {
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content: `You are GEO Engine, an expert AI catalog optimizer. Your mission is to make product data fully readable and indexable for AI shopping engines (such as Gemini, ChatGPT, Perplexity, Claude).
+      const rawText = await callChatJSON([
+        {
+          role: "system",
+          content: `You are GEO Engine, an expert AI catalog optimizer. Your mission is to make product data fully readable and indexable for AI shopping engines (such as Gemini, ChatGPT, Perplexity, Claude).
 Your response must be returned strictly in JSON format matching this schema:
 {
   "suggestedTitle": "Optimized product title (20-70 characters, includes brand/model/attributes)",
@@ -158,10 +174,10 @@ Your response must be returned strictly in JSON format matching this schema:
     {"imageId": "String (exact image ID provided)", "altText": "Descriptive, keyword-rich alt text"}
   ]
 }`,
-          },
-          {
-            role: "user",
-            content: `Optimize this product catalog details:
+        },
+        {
+          role: "user",
+          content: `Optimize this product catalog details:
 Title: "${productScan.title}"
 Brand/Vendor: "${shopifyProduct?.vendor || ""}"
 Product Type: "${shopifyProduct?.productType || ""}"
@@ -169,32 +185,12 @@ Tags: ${JSON.stringify(shopifyProduct?.tags || [])}
 Original Product description: "${shopifyProduct?.description || ""}"
 Issues Identified: ${productScan.issues.map((i) => i.message).join("; ")}
 Images: ${JSON.stringify(images.map((img) => ({ id: img.id })))}`,
-          },
-        ],
-        response_format: { type: "json_object" },
-      };
-
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
         },
-        body: JSON.stringify(payload),
-      });
+      ]);
 
-      if (!response.ok) {
-        throw new Error(`OpenAI HTTP Error: ${response.status}`);
-      }
-
-      const responseJson = await response.json();
-      const rawText = responseJson.choices?.[0]?.message?.content;
-      if (!rawText || typeof rawText !== "string") {
-        throw new Error("OpenAI returned an empty or invalid response");
-      }
-      suggestions = JSON.parse(rawText) as AISuggestionResponse;
+      suggestions = parseSuggestionJSON(rawText);
     } catch (error) {
-      console.error("[AI Pipeline] Failed to generate suggestions via OpenAI. Falling back to local rules:", error);
+      console.error("[AI Pipeline] All AI providers failed. Falling back to local rules:", error);
       suggestions = generateMockSuggestions(
         productScan.title,
         shopifyProduct?.description || "",

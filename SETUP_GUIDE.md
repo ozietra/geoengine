@@ -102,7 +102,7 @@ git push
 1. https://render.com → GitHub ile giriş.
 2. **New → Web Service** → `geo-engine` reponu seç.
 3. Ayarlar:
-   - **Name:** `geo-engine`  → URL'in `https://geo-engine.onrender.com` olur
+   - **Name:** `geo-engine`  → URL'in `https://geoengine-d1o3.onrender.com` olur
    - **Region:** Frankfurt
    - **Branch:** `main`
    - **Runtime:** Node
@@ -118,21 +118,50 @@ git push
 DATABASE_URL        = (A3'teki Neon connection string)
 SHOPIFY_API_KEY     = (A2'deki Client ID)
 SHOPIFY_API_SECRET  = (A2'deki Client secret)
-SHOPIFY_APP_URL     = https://geo-engine.onrender.com
+SHOPIFY_APP_URL     = https://geoengine-d1o3.onrender.com
 SCOPES              = write_products,write_metaobjects,write_metaobject_definitions,read_content
-OPENAI_API_KEY      = sk-...   (OPSİYONEL — yoksa uygulama offline heuristik önerilere düşer)
+GROQ_API_KEYS       = gsk_xxx,gsk_yyy,gsk_zzz   (ÜCRETSİZ AI — B2.1'e bak)
 NODE_ENV            = production
 ```
-> ⚠️ AI önerileri **OpenAI** kullanır (`OPENAI_API_KEY`). Anahtar koymazsan uygulama
-> çalışır ama öneriler yapay zekâ yerine yerleşik kural motorundan gelir.
 > `PORT`'u **sen ayarlama** — Render otomatik verir, uygulama onu okur.
+
+## B2.1 AI anahtarları (ücretsiz öneriler için)
+AI önerileri (başlık, açıklama, alt metin) bir **sağlayıcı zinciri** kullanır: bir anahtar
+**rate-limit yerse otomatik olarak sıradakine geçer**. Hiç anahtar yoksa uygulama yine
+çalışır, önerileri yerleşik kural motorundan üretir (yapay zekâsız).
+
+**Önerilen ve tamamen ücretsiz: Groq.**
+1. https://console.groq.com → ücretsiz kayıt → **API Keys → Create API Key**.
+2. İstersen 2–10 ayrı ücretsiz anahtar oluştur (limiti katlamak için).
+3. Render env'e **tek satır**, virgülle ayırarak ekle:
+   ```
+   GROQ_API_KEYS = gsk_anahtar1,gsk_anahtar2,gsk_anahtar3
+   ```
+
+İstersen başka sağlayıcılar da ekleyebilirsin; hepsi aynı fallback zincirinde olur:
+
+| Env değişkeni | Sağlayıcı | Not |
+|---|---|---|
+| `GROQ_API_KEYS` | Groq | **Ücretsiz**, hızlı — önerilen |
+| `OPENROUTER_API_KEYS` | OpenRouter | Ücretsiz modeller (`...:free`) |
+| `OPENAI_API_KEYS` | OpenAI | Ücretli (gpt-4o-mini), en yüksek kalite |
+
+Opsiyonel ek ayarlar:
+- Tek anahtar yeterliyse çoğul yerine tekil de olur: `GROQ_API_KEY = gsk_...`
+- Her anahtarı ayrı satır istersen: `GROQ_API_KEY_1`, `GROQ_API_KEY_2`, … (20'ye kadar)
+- `AI_PROVIDER_ORDER` — hangi sağlayıcı önce denensin (varsayılan `groq,openrouter,openai`)
+- `GROQ_MODEL` (vars. `llama-3.3-70b-versatile`), `OPENROUTER_MODEL`, `OPENAI_MODEL`
+
+> Not: **FREE plandaki** mağazalar hiç AI çağrısı yapmaz (deterministik öneri alır).
+> AI'yı test etmek için test mağazanda ücretli bir plan seç — development mağazasında
+> gerçek ücret alınmaz.
 
 **Create Web Service** → ilk deploy başlar (~5–10 dk). Üstte durum **Live** olunca hazır.
 
 ## B3. UptimeRobot ile uyanık tut (uyku engelleme)
 Render free servis 15 dk hareketsizlikte uyur. İstediğin site **UptimeRobot**:
 1. https://uptimerobot.com → ücretsiz kayıt.
-2. **Add New Monitor** → Type: **HTTP(s)** → URL: `https://geo-engine.onrender.com`
+2. **Add New Monitor** → Type: **HTTP(s)** → URL: `https://geoengine-d1o3.onrender.com`
    → Monitoring Interval: **5 minutes** → **Create Monitor**.
 Artık 5 dakikada bir ping geleceği için servis uyumaz, webhook'ları kaçırmaz.
 
@@ -145,16 +174,16 @@ Render artık çalışıyor; şimdi Shopify'a "uygulamam burada" dememiz lazım.
 ## C1. `shopify.app.toml` URL'lerini güncelle
 Dosyada `example.com` yazan yerleri Render adresinle değiştir:
 ```toml
-application_url = "https://geo-engine.onrender.com"
+application_url = "https://geoengine-d1o3.onrender.com"
 
 [auth]
 redirect_urls = [
-  "https://geo-engine.onrender.com/auth/callback",
-  "https://geo-engine.onrender.com/api/auth"
+  "https://geoengine-d1o3.onrender.com/auth/callback",
+  "https://geoengine-d1o3.onrender.com/api/auth"
 ]
 
 [app_proxy]
-url = "https://geo-engine.onrender.com/proxy"
+url = "https://geoengine-d1o3.onrender.com/proxy"
 subpath = "geo"
 prefix = "apps"
 ```
@@ -258,7 +287,7 @@ Test tamamsa artık inceleme için gönderebilirsin.
 - ✅ **App proxy + webhook'lar** Shopify'a yazıldı (BÖLÜM C2'deki `npm run deploy`).
 - ✅ **Billing** kodda tanımlı (Free / Starter / Growth / Unlimited).
 - ⛳ **Privacy Policy URL** lazım. Hızlı yol: https://termly.io ile ücretsiz üret, ya da
-  `public/privacy.html` koyup `https://geo-engine.onrender.com/privacy` adresini kullan.
+  `public/privacy.html` koyup `https://geoengine-d1o3.onrender.com/privacy` adresini kullan.
 
 ## E4. İncelemeye gönder
 1. Partner → Apps → **GEO Engine → Distribution → Shopify App Store → Create listing**.
