@@ -96,11 +96,17 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     if (error instanceof Response) {
       throw error;
     }
-    console.error("[BillingAction] billing.request failed:", error);
+    // Shopify's BillingError uses a generic "Error while billing the store"
+    // message and hides the real reason in `errorData` (the appSubscriptionCreate
+    // userErrors). Surface it so the cause (e.g. live charge rejected on a dev
+    // store, invalid return URL) is visible instead of opaque.
+    const errorData = (error as { errorData?: unknown }).errorData;
+    const detail = errorData ? ` — ${JSON.stringify(errorData)}` : "";
+    console.error("[BillingAction] billing.request failed:", error, errorData);
     const message = error instanceof Error ? error.message : "Unknown billing error";
     return {
       success: false,
-      error: `Could not start checkout for ${paidPlanCode}: ${message}`,
+      error: `Could not start checkout for ${paidPlanCode}: ${message}${detail}`,
     };
   }
 };

@@ -420,7 +420,11 @@ export async function runSingleProductScan(
         select: { policyScore: true },
       });
 
-      const policyScore = parentScan?.policyScore || 100;
+      // Use ?? not ||: a genuine policyScore of 0 (every store policy missing) is
+      // valid and must be kept. With || a 0 would wrongly fall back to 100, which
+      // inflated the live store score after applying product fixes and made it
+      // disagree with the next full catalog scan.
+      const policyScore = parentScan?.policyScore ?? 100;
 
       const storeOverallScore = Math.round(
         avgTitle * 0.15 +
