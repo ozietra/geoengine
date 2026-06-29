@@ -1,6 +1,6 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "a63ee7487084e0fe28443f178bfed4e5"
+client_id = "256c14b34f89f66fde88d191aebea6a8"
 name = "GEO Engine"
 application_url = "https://geoengine-d1o3.onrender.com"
 embedded = true
@@ -36,6 +36,13 @@ type = "multi_line_text_field"
 [webhooks]
 api_version = "2026-04"
 
+  # Mandatory GDPR/compliance webhooks. These topics are NOT valid as regular
+  # subscriptions - they must be declared under privacy_compliance.
+  [webhooks.privacy_compliance]
+  customer_data_request_url = "/webhooks/customers/data_request"
+  customer_deletion_url = "/webhooks/customers/redact"
+  shop_deletion_url = "/webhooks/shop/redact"
+
   [[webhooks.subscriptions]]
   uri = "/webhooks/app/uninstalled"
   topics = [ "app/uninstalled" ]
@@ -49,19 +56,6 @@ api_version = "2026-04"
   [[webhooks.subscriptions]]
   uri = "/webhooks/products/update"
   topics = [ "products/update" ]
-
-  # Mandatory GDPR compliance webhooks - required for Shopify App Store review
-  [[webhooks.subscriptions]]
-  uri = "/webhooks/customers/data_request"
-  topics = [ "customers/data_request" ]
-
-  [[webhooks.subscriptions]]
-  uri = "/webhooks/customers/redact"
-  topics = [ "customers/redact" ]
-
-  [[webhooks.subscriptions]]
-  uri = "/webhooks/shop/redact"
-  topics = [ "shop/redact" ]
 
 [auth]
 redirect_urls = [
