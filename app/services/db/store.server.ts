@@ -147,9 +147,12 @@ export async function getProductScanDetails(productScanId: string) {
 
   if (!productScan) return null;
 
-  // Generate suggestions if they don't exist yet
-  const pendingSuggestions = productScan.aiSuggestions.filter((s) => s.status === "PENDING");
-  if (productScan.issues.length > 0 && pendingSuggestions.length === 0) {
+  // Generate suggestions only once per product scan - when none have ever been
+  // generated. Previously this regenerated whenever no PENDING suggestions
+  // remained, which recreated already-accepted suggestions on every page load
+  // and re-appended the suggested text onto the "original" content repeatedly.
+  // Fresh suggestions now only come from a new catalog scan.
+  if (productScan.issues.length > 0 && productScan.aiSuggestions.length === 0) {
     try {
       await generateAISuggestions(productScan.id);
       // Re-fetch details with newly generated suggestions

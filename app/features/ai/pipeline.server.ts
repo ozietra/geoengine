@@ -57,6 +57,14 @@ function generateMockSuggestions(
     }
   }
 
+  // Detect whether this description has already been enriched by a previous
+  // optimization. Shopify returns the `description` field as PLAIN TEXT (HTML
+  // tags stripped), so checking only for <p>/<ul> tags is not enough: once a fix
+  // is applied and the product is re-scanned, the tags are gone but the heading
+  // text we injected remains. We key off that heading text so enrichment is
+  // idempotent and never re-appends/compounds across repeated scans.
+  const alreadyEnriched = /Product Features & Specifications|Key Specifications/i.test(description);
+
   // Format description in HTML
   let enhancedDescription = description;
   if (!description || description.trim().length === 0) {
@@ -67,7 +75,7 @@ function generateMockSuggestions(
   <li><strong>Quality:</strong> Crafted with premium materials for long-lasting durability</li>
   <li><strong>Use Case:</strong> Suitable for a wide range of everyday applications</li>
 </ul>`;
-  } else if (!description.includes("<ul>") && !description.includes("<p>")) {
+  } else if (!alreadyEnriched && !description.includes("<ul>") && !description.includes("<p>")) {
     enhancedDescription = `<p>${description}</p>
 <h3>Product Features & Specifications</h3>
 <ul>
@@ -125,16 +133,14 @@ export async function generateAISuggestions(productScanId: string): Promise<void
       url: e.node.image?.url || "",
     }));
 
-  // Check if we already have pending suggestions
+  // Never regenerate: if suggestions were already created for this product scan
+  // in ANY status (pending, accepted, rejected), stop here. Regenerating after a
+  // suggestion had been accepted caused duplicated/compounding content.
   const existingSuggestions = await prisma.aISuggestion.findMany({
-    where: {
-      productScanId,
-      status: "PENDING",
-    },
+    where: { productScanId },
   });
 
   if (existingSuggestions.length > 0) {
-    // Already generated suggestions
     return;
   }
 
@@ -219,14 +225,19 @@ Images: ${JSON.stringify(images.map((img) => ({ id: img.id })))}`,
     );
   }
 
-  // Description Suggestion
-  if (suggestions.suggestedDescription) {
+  // Description Suggestion — only when it is a genuine change. Like the title
+  // guard above, this prevents creating a no-op suggestion (and therefore a
+  // pointless "Accept & Apply" that just re-writes identical content). Crucially,
+  // once a description has already been optimized the generator returns it
+  // unchanged, so no new suggestion is created on subsequent re-scans.
+  const originalDescription = shopifyProduct?.description || "";
+  if (suggestions.suggestedDescription && suggestions.suggestedDescription.trim() !== originalDescription.trim()) {
     dbOps.push(
       prisma.aISuggestion.create({
         data: {
           productScanId,
           fieldType: "DESCRIPTION",
-          originalContent: shopifyProduct?.description || "",
+          originalContent: originalDescription,
           suggestedContent: suggestions.suggestedDescription,
           status: "PENDING",
         },
