@@ -3,91 +3,12 @@ import { useLoaderData, useRouteError, useSubmit } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
 import { getProductScans } from "~/services/db/store.server";
-import prisma from "~/db.server";
 
-/**
- * Loader handles two modes:
- *
- * 1. Normal page load (no ?format param) — returns JSON for the React
- *    component to render.
- *
- * 2. CSV export (?format=csv) — returns a downloadable CSV file with all
- *    product scan results from the latest scan.  Triggered via
- *    window.top?.location.href so the download fires in the top-level frame
- *    rather than inside Shopify's embedded app iframe.
- */
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
   const url = new URL(request.url);
 
-  // ── CSV export branch ──────────────────────────────────────────────────────
-  if (url.searchParams.get("format") === "csv") {
-    const profile = await prisma.storeProfile.findUnique({
-      where: { shop: session.shop },
-    });
-
-    const latestScan = profile
-      ? await prisma.scan.findFirst({
-          where: { storeId: profile.id },
-          orderBy: { scannedAt: "desc" },
-        })
-      : null;
-
-    if (!latestScan) {
-      // Return an empty CSV rather than a 404 so the browser still downloads
-      // a file (just with headers only) instead of showing an error page.
-      const empty = "Title,Handle,Overall Score,Title Score,Description Score,Media Score,Variant Score,Structured Data Score,Open Issues\n";
-      return new Response(empty, {
-        headers: {
-          "Content-Type": "text/csv; charset=utf-8",
-          "Content-Disposition": `attachment; filename="catalog-report-${new Date().toISOString().split("T")[0]}.csv"`,
-        },
-      });
-    }
-
-    const allProducts = await prisma.productScan.findMany({
-      // Locked (over-limit) products carry no scan data — exclude from the report.
-      where: { scanId: latestScan.id, locked: false },
-      include: {
-        _count: { select: { issues: { where: { resolved: false } } } },
-      },
-      orderBy: { overallScore: "asc" },
-    });
-
-    const csvRows: string[] = [
-      "Title,Handle,Overall Score,Title Score,Description Score,Media Score,Variant Score,Structured Data Score,Open Issues",
-    ];
-
-    for (const p of allProducts) {
-      // Wrap title in quotes and escape any embedded quotes
-      const safeTitle = `"${p.title.replace(/"/g, '""')}"`;
-      csvRows.push(
-        [
-          safeTitle,
-          p.handle,
-          p.overallScore,
-          p.titleScore,
-          p.descriptionScore,
-          p.mediaScore,
-          p.variantScore,
-          p.structuredDataScore,
-          p._count.issues,
-        ].join(",")
-      );
-    }
-
-    const csv = csvRows.join("\n");
-    const dateStamp = new Date().toISOString().split("T")[0];
-
-    return new Response(csv, {
-      headers: {
-        "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition": `attachment; filename="catalog-report-${dateStamp}.csv"`,
-      },
-    });
-  }
-
-  // ── Normal page load ───────────────────────────────────────────────────────
+  // CSV export lives in its own resource route (app.export-csv.tsx).
   const search = url.searchParams.get("search") || "";
   const page = parseInt(url.searchParams.get("page") || "1", 10);
 
@@ -134,14 +55,15 @@ export default function ProductsList() {
       const shopify = (window as unknown as { shopify?: { idToken?: () => Promise<string> } }).shopify;
       const token = shopify?.idToken ? await shopify.idToken() : null;
 
-      const res = await fetch("/app/products?format=csv", {
+      const res = await fetch("/app/export-csv", {
         headers: {
           Accept: "text/csv",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
       if (!res.ok) {
-        throw new Error(`Export failed (${res.status})`);
+        const detail = await res.text().catch(() => "");
+        throw new Error(`Export failed (${res.status})${detail ? `: ${detail}` : ""}`);
       }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
