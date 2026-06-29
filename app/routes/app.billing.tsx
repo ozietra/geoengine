@@ -144,7 +144,7 @@ export default function BillingPage() {
       limit: "Up to 100 products",
       features: [
         "Everything in Free",
-        "Full AI Suggestion Pipeline (Groq / OpenRouter / OpenAI)",
+        "Full AI Suggestion Pipeline",
         "Weekly automated catalog monitoring",
         "Prioritized ROI recommendation lists",
         "1-click Shopify catalog writeback",
