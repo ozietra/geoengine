@@ -27,7 +27,14 @@ export const PLAN_NAME_TO_CODE: Record<string, "STARTER" | "GROWTH" | "UNLIMITED
 // Never charge real money outside of production. Shopify also refuses to
 // charge development/test stores regardless of this flag, but we set it
 // explicitly so local/staging environments never attempt a live charge.
-export const isTestCharge = process.env.NODE_ENV !== "production";
+//
+// IMPORTANT: Shopify *rejects* a live (non-test) charge on a development/test
+// store, which surfaces as a 500 on the billing action. When the hosted app
+// runs with NODE_ENV=production (e.g. on Render) but is installed on a dev
+// store for testing, set SHOPIFY_BILLING_TEST=true to force test charges and
+// avoid that rejection. Leave it unset for real production stores.
+export const isTestCharge =
+  process.env.SHOPIFY_BILLING_TEST === "true" || process.env.NODE_ENV !== "production";
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,

@@ -100,6 +100,22 @@ export const UPDATE_IMAGE_MUTATION = `#graphql
   }
 `;
 
+export const UPDATE_VARIANTS_MUTATION = `#graphql
+  mutation productVariantsBulkUpdate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+    productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+      productVariants {
+        id
+        sku
+        barcode
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
 export const GET_SINGLE_PRODUCT_QUERY = `#graphql
   query getProduct($id: ID!) {
     node(id: $id) {

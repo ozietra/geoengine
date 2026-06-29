@@ -22,6 +22,7 @@ export default function App() {
         <s-link href="/app/products">Products Directory</s-link>
         <s-link href="/app/agentic">Agentic Storefront</s-link>
         <s-link href="/app/billing">Billing</s-link>
+        <s-link href="/app/cleanup">Description Repair</s-link>
       </s-app-nav>
       <Outlet />
     </AppProvider>

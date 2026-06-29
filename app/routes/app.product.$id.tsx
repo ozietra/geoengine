@@ -1,5 +1,5 @@
 import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "react-router";
-import { useLoaderData, useRouteError, useSubmit, useActionData } from "react-router";
+import { useLoaderData, useRouteError, useSubmit, useActionData, useNavigation } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { useState } from "react";
 import { authenticate } from "../shopify.server";
@@ -62,11 +62,18 @@ export default function ProductDetail() {
   const { details } = useLoaderData<typeof loader>();
   const actionData = useActionData<{ success: boolean; error?: string }>();
   const submit = useSubmit();
+  const navigation = useNavigation();
+
+  // True while a suggestion submit is in flight (action running + loader
+  // revalidating). Drives the "recalculating" score indicator and disables the
+  // buttons so a fix can't be applied twice before the score refreshes.
+  const isApplying = navigation.state !== "idle";
 
   // State to hold edits for suggestion values locally
   const [editedValues, setEditedValues] = useState<Record<string, string>>({});
 
   const handleSuggestionAction = (suggestionId: string, status: "ACCEPTED" | "REJECTED" | "EDITED") => {
+    if (isApplying) return;
     const formData = new FormData();
     formData.set("suggestionId", suggestionId);
     formData.set("status", status);
@@ -91,6 +98,21 @@ export default function ProductDetail() {
   const currentScoreColor = getScoreColor(details.overallScore);
   const pendingSuggestions = details.aiSuggestions.filter((s) => s.status === "PENDING");
   const processedSuggestions = details.aiSuggestions.filter((s) => s.status !== "PENDING");
+
+  // Field types the merchant fills in by hand (we never let AI invent a SKU,
+  // barcode, weight, or tag set). They render an input instead of the AI diff
+  // view and always submit as an EDITED merchant value.
+  const MANUAL_ENTRY_FIELDS = new Set(["VARIANT_SKU", "VARIANT_BARCODE", "VARIANT_WEIGHT", "TAGS"]);
+  const FIELD_LABELS: Record<string, string> = {
+    TITLE: "Title",
+    DESCRIPTION: "Description",
+    ALT_TEXT: "Image Alt Text",
+    VARIANT_SKU: "Variant SKU",
+    VARIANT_BARCODE: "Variant Barcode / GTIN",
+    VARIANT_WEIGHT: "Variant Weight",
+    TAGS: "Product Tags",
+  };
+  const WEIGHT_UNITS = ["GRAMS", "KILOGRAMS", "OUNCES", "POUNDS"];
 
   return (
     <s-page heading={`AI Evaluation: ${details.title}`}>
@@ -161,11 +183,15 @@ export default function ProductDetail() {
                 alignItems: "center",
                 justifyContent: "center",
                 margin: "8px 0",
+                opacity: isApplying ? 0.5 : 1,
+                transition: "opacity 0.2s ease-in-out",
               }}
             >
               {details.overallScore}
             </div>
-            <span style={{ fontSize: "12px", color: "#6b7280", textAlign: "center" }}>Product details page scan status.</span>
+            <span style={{ fontSize: "12px", color: "#6b7280", textAlign: "center" }}>
+              {isApplying ? "Recalculating score…" : "Product details page scan status."}
+            </span>
           </div>
         </s-box>
 
@@ -244,6 +270,131 @@ export default function ProductDetail() {
         ) : (
           <s-stack direction="block" gap="large">
             {pendingSuggestions.map((suggestion) => {
+              const isManual = MANUAL_ENTRY_FIELDS.has(suggestion.fieldType);
+              const fieldLabel = FIELD_LABELS[suggestion.fieldType] || suggestion.fieldType;
+
+              // ── Manual-entry fields (SKU / barcode / weight / tags) ──────────
+              if (isManual) {
+                const isWeight = suggestion.fieldType === "VARIANT_WEIGHT";
+                const raw = editedValues[suggestion.id] ?? (isWeight ? "::KILOGRAMS" : "");
+                const [weightValue, weightUnitRaw] = raw.split("::");
+                const weightUnit = weightUnitRaw || "KILOGRAMS";
+
+                const canApply = isWeight
+                  ? isFinite(parseFloat(weightValue)) && parseFloat(weightValue) > 0
+                  : raw.trim().length > 0;
+
+                const placeholder =
+                  suggestion.fieldType === "VARIANT_SKU"
+                    ? "e.g. TSHIRT-RED-L"
+                    : suggestion.fieldType === "VARIANT_BARCODE"
+                    ? "e.g. 0123456789012 (UPC/EAN/GTIN)"
+                    : suggestion.fieldType === "TAGS"
+                    ? "Comma-separated, e.g. cotton, unisex, summer"
+                    : "";
+
+                const contextLabel =
+                  suggestion.fieldType === "TAGS"
+                    ? `Current tags: ${suggestion.originalContent || "[none]"}`
+                    : `Variant: ${suggestion.originalContent || "Default"}`;
+
+                return (
+                  <s-box key={suggestion.id} padding="base" borderWidth="base" borderRadius="base">
+                    <s-stack direction="block" gap="base">
+                      <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #e5e7eb", paddingBottom: "8px" }}>
+                        <span style={{ fontWeight: "700", textTransform: "uppercase", fontSize: "12px", color: "#3b82f6" }}>
+                          Add {fieldLabel}
+                        </span>
+                        <span style={{ fontSize: "12px", color: "#6b7280" }}>{contextLabel}</span>
+                      </div>
+
+                      <div style={{ marginTop: "8px" }}>
+                        <span style={{ fontSize: "12px", fontWeight: "600", color: "#10b981", display: "block", marginBottom: "4px" }}>
+                          Enter value to apply to Shopify:
+                        </span>
+
+                        {isWeight ? (
+                          <div style={{ display: "flex", gap: "8px" }}>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              placeholder="0.00"
+                              style={{
+                                flex: 1,
+                                padding: "8px",
+                                border: "1.5px solid #10b981",
+                                borderRadius: "4px",
+                                fontSize: "13px",
+                                fontFamily: "inherit",
+                                boxSizing: "border-box",
+                              }}
+                              value={weightValue}
+                              onChange={(e) =>
+                                setEditedValues({ ...editedValues, [suggestion.id]: `${e.target.value}::${weightUnit}` })
+                              }
+                            />
+                            <select
+                              style={{
+                                padding: "8px",
+                                border: "1.5px solid #10b981",
+                                borderRadius: "4px",
+                                fontSize: "13px",
+                                fontFamily: "inherit",
+                              }}
+                              value={weightUnit}
+                              onChange={(e) =>
+                                setEditedValues({ ...editedValues, [suggestion.id]: `${weightValue}::${e.target.value}` })
+                              }
+                            >
+                              {WEIGHT_UNITS.map((u) => (
+                                <option key={u} value={u}>
+                                  {u}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        ) : (
+                          <input
+                            type="text"
+                            placeholder={placeholder}
+                            style={{
+                              width: "100%",
+                              padding: "8px",
+                              border: "1.5px solid #10b981",
+                              borderRadius: "4px",
+                              fontSize: "13px",
+                              fontFamily: "inherit",
+                              boxSizing: "border-box",
+                            }}
+                            value={raw}
+                            onChange={(e) => setEditedValues({ ...editedValues, [suggestion.id]: e.target.value })}
+                          />
+                        )}
+                      </div>
+
+                      <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "12px" }}>
+                        <s-button
+                          variant="tertiary"
+                          onClick={() => handleSuggestionAction(suggestion.id, "REJECTED")}
+                          {...(isApplying ? { disabled: true } : {})}
+                        >
+                          Dismiss
+                        </s-button>
+                        <s-button
+                          variant="primary"
+                          onClick={() => handleSuggestionAction(suggestion.id, "EDITED")}
+                          {...(isApplying || !canApply ? { disabled: true } : {})}
+                        >
+                          {isApplying ? "Applying…" : "Save & Apply"}
+                        </s-button>
+                      </div>
+                    </s-stack>
+                  </s-box>
+                );
+              }
+
+              // ── AI-generated fields (title / description / alt text) ─────────
               const currentVal = editedValues[suggestion.id] !== undefined ? editedValues[suggestion.id] : suggestion.suggestedContent;
               const isEdited = currentVal !== suggestion.suggestedContent;
 
@@ -253,7 +404,7 @@ export default function ProductDetail() {
                     {/* Header */}
                     <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #e5e7eb", paddingBottom: "8px" }}>
                       <span style={{ fontWeight: "700", textTransform: "uppercase", fontSize: "12px", color: "#3b82f6" }}>
-                        Optimize Field: {suggestion.fieldType}
+                        Optimize Field: {fieldLabel}
                       </span>
                       <span style={{ fontSize: "12px", color: "#6b7280" }}>
                         {suggestion.fieldType === "ALT_TEXT" ? `Image ID: ${suggestion.metafieldKey?.substring(0, 15)}...` : ""}
@@ -327,14 +478,16 @@ export default function ProductDetail() {
                       <s-button
                         variant="tertiary"
                         onClick={() => handleSuggestionAction(suggestion.id, "REJECTED")}
+                        {...(isApplying ? { disabled: true } : {})}
                       >
                         Dismiss
                       </s-button>
                       <s-button
                         variant={isEdited ? "secondary" : "primary"}
                         onClick={() => handleSuggestionAction(suggestion.id, isEdited ? "EDITED" : "ACCEPTED")}
+                        {...(isApplying ? { disabled: true } : {})}
                       >
-                        {isEdited ? "Apply Merchant Edit" : "Accept & Apply Fix"}
+                        {isApplying ? "Applying…" : isEdited ? "Apply Merchant Edit" : "Accept & Apply Fix"}
                       </s-button>
                     </div>
                   </s-stack>

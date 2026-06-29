@@ -1,5 +1,5 @@
 import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "react-router";
-import { useLoaderData, useRouteError, useSubmit } from "react-router";
+import { useLoaderData, useRouteError, useSubmit, useActionData } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import {
   authenticate,
@@ -80,15 +80,34 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   const paidPlanCode = plan as "STARTER" | "GROWTH" | "UNLIMITED";
 
-  return billing.request({
-    plan: PLAN_NAME_BY_CODE[paidPlanCode],
-    isTest: isTestCharge,
-    returnUrl: `${process.env.SHOPIFY_APP_URL}/app/billing`,
-  });
+  try {
+    // billing.request throws a redirect Response (to Shopify's confirmation
+    // page) on success — that must bubble up untouched. We only catch genuine
+    // errors so a failed charge (e.g. Shopify rejecting a live charge on a
+    // development store) returns a readable message instead of a raw 500.
+    return await billing.request({
+      plan: PLAN_NAME_BY_CODE[paidPlanCode],
+      isTest: isTestCharge,
+      returnUrl: `${process.env.SHOPIFY_APP_URL}/app/billing`,
+    });
+  } catch (error) {
+    // A thrown Response is the redirect we want — re-throw it so the framework
+    // performs the navigation to Shopify's billing confirmation screen.
+    if (error instanceof Response) {
+      throw error;
+    }
+    console.error("[BillingAction] billing.request failed:", error);
+    const message = error instanceof Error ? error.message : "Unknown billing error";
+    return {
+      success: false,
+      error: `Could not start checkout for ${paidPlanCode}: ${message}`,
+    };
+  }
 };
 
 export default function BillingPage() {
   const { profile } = useLoaderData<typeof loader>();
+  const actionData = useActionData<{ success: boolean; error?: string }>();
   const submit = useSubmit();
 
   const currentPlanCode = profile?.plan || "FREE";
@@ -119,10 +138,13 @@ export default function BillingPage() {
       limit: "Up to 100 products",
       features: [
         "Everything in Free",
-        "Full AI Suggestion Pipeline",
+        "Full AI Suggestion Pipeline (Groq / OpenRouter / OpenAI)",
         "Weekly automated catalog monitoring",
-        "Prioritized ROI action lists",
+        "Prioritized ROI recommendation lists",
         "1-click Shopify catalog writeback",
+        "Real-time product-update re-sync",
+        "Score history & trend tracking",
+        "Downloadable catalog report (CSV)",
       ],
       color: "#3b82f6",
       highlight: false,
@@ -132,11 +154,10 @@ export default function BillingPage() {
       price: "$9.99",
       limit: "Up to 1,000 products",
       features: [
-        "Everything in Starter",
-        "Bulk AI Suggestion review & apply",
-        "Monthly catalog health reports",
-        "Historical regression alarms",
-        "Priority worker processing slots",
+        "Everything in Starter, at scale",
+        "Monitor up to 1,000 products",
+        "Weekly monitoring across your full catalog",
+        "Ideal for growing catalogs",
       ],
       color: "#8b5cf6",
       highlight: true,
@@ -147,9 +168,9 @@ export default function BillingPage() {
       limit: "Unlimited products",
       features: [
         "Everything in Growth",
-        "Dedicated API throughput",
-        "Direct webhook schema monitors",
-        "24/7 Priority support",
+        "Unlimited product monitoring",
+        "No catalog size cap",
+        "Best for large catalogs & agencies",
       ],
       color: "#10b981",
       highlight: false,
@@ -158,6 +179,23 @@ export default function BillingPage() {
 
   return (
     <s-page heading="Billing & Subscriptions">
+      {actionData?.success === false && (
+        <div
+          style={{
+            padding: "12px 16px",
+            backgroundColor: "#fef2f2",
+            border: "1px solid #fca5a5",
+            borderRadius: "6px",
+            color: "#b91c1c",
+            fontSize: "13px",
+            marginBottom: "16px",
+            fontWeight: "500",
+          }}
+        >
+          {actionData.error}
+        </div>
+      )}
+
       {/* Current plan */}
       <s-section heading="Current Plan Status">
         <s-box padding="base" background="subdued" borderRadius="base">
@@ -276,14 +314,29 @@ export default function BillingPage() {
 
       {/* Pricing plans */}
       <s-section heading="Available Packages">
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-            gap: "20px",
-            marginTop: "16px",
+        {/* Inline styles can't express media queries, so the responsive column
+            counts live here. 4-up on wide screens (all packages inline), 2-up on
+            tablets, 1-up on phones. */}
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              .geo-plan-grid {
+                display: grid;
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 20px;
+                margin-top: 16px;
+                align-items: stretch;
+              }
+              @media (max-width: 1100px) {
+                .geo-plan-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+              }
+              @media (max-width: 620px) {
+                .geo-plan-grid { grid-template-columns: 1fr; }
+              }
+            `,
           }}
-        >
+        />
+        <div className="geo-plan-grid">
           {plans.map((plan) => {
             const isCurrent = currentPlanCode === plan.name;
             const isDowngrade = PLAN_RANK[plan.name] < PLAN_RANK[currentPlanCode];

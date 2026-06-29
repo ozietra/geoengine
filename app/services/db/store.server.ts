@@ -1,7 +1,7 @@
 import prisma from "~/db.server";
 import { getPrioritizedRecommendations } from "~/features/recommendations/engine.server";
 import { generateAISuggestions } from "~/features/ai/pipeline.server";
-import { ShopifyClient } from "~/services/shopify/client.server";
+import { ShopifyClient, type WeightUnit } from "~/services/shopify/client.server";
 import type { PrioritizedRecommendation } from "~/features/recommendations/engine.server";
 import type { Prisma } from "@prisma/client";
 
@@ -256,6 +256,46 @@ export async function resolveSuggestion(
           resolvedAt: new Date(),
         },
       });
+    } else if (suggestion.fieldType === "VARIANT_SKU" || suggestion.fieldType === "VARIANT_BARCODE") {
+      // Manual-entry identifiers. The merchant types the real value; we never
+      // invent one. The matching VARIANTS issue is re-evaluated (and removed if
+      // every variant is now complete) by runSingleProductScan below, which
+      // handles partial fixes correctly when a product has several variants.
+      const variantId = suggestion.metafieldKey;
+      if (!variantId) {
+        throw new Error(`AISuggestion ${suggestionId} (${suggestion.fieldType}) is missing its variant id`);
+      }
+      if (!finalContent || finalContent.trim() === "") {
+        throw new Error("A value is required before applying this fix");
+      }
+      if (suggestion.fieldType === "VARIANT_SKU") {
+        await client.updateVariant(shopifyProductId, variantId, { sku: finalContent.trim() });
+      } else {
+        await client.updateVariant(shopifyProductId, variantId, { barcode: finalContent.trim() });
+      }
+    } else if (suggestion.fieldType === "VARIANT_WEIGHT") {
+      const variantId = suggestion.metafieldKey;
+      if (!variantId) {
+        throw new Error(`AISuggestion ${suggestionId} (VARIANT_WEIGHT) is missing its variant id`);
+      }
+      // Encoded by the UI as "<value>::<unit>" (e.g. "1.5::KILOGRAMS").
+      const [rawValue, rawUnit] = (finalContent || "").split("::");
+      const value = parseFloat(rawValue);
+      if (!isFinite(value) || value <= 0) {
+        throw new Error("A positive weight value is required");
+      }
+      const allowedUnits: WeightUnit[] = ["GRAMS", "KILOGRAMS", "OUNCES", "POUNDS"];
+      const unit = (allowedUnits as string[]).includes(rawUnit) ? (rawUnit as WeightUnit) : "KILOGRAMS";
+      await client.updateVariant(shopifyProductId, variantId, { weight: { value, unit } });
+    } else if (suggestion.fieldType === "TAGS") {
+      if (!finalContent || finalContent.trim() === "") {
+        throw new Error("Enter at least one tag before applying this fix");
+      }
+      const tags = finalContent
+        .split(",")
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0);
+      await client.updateProduct(shopifyProductId, { tags });
     }
 
     // Update suggestion status in DB

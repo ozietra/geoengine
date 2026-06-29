@@ -4,6 +4,7 @@ import {
   GET_SHOP_SETTINGS_QUERY,
   UPDATE_PRODUCT_MUTATION,
   UPDATE_IMAGE_MUTATION,
+  UPDATE_VARIANTS_MUTATION,
   GET_SINGLE_PRODUCT_QUERY,
 } from "./graphql.server";
 
@@ -53,6 +54,13 @@ interface ProductUpdateData {
 interface ProductUpdateMediaData {
   productUpdateMedia?: { mediaUserErrors: UserError[] };
 }
+
+interface ProductVariantsBulkUpdateData {
+  productVariantsBulkUpdate?: { userErrors: UserError[] };
+}
+
+// Shopify weight units accepted by ProductVariantsBulkInput.measurement.
+export type WeightUnit = "GRAMS" | "KILOGRAMS" | "OUNCES" | "POUNDS";
 
 interface SingleProductData {
   node: ShopifyProduct | null;
@@ -270,8 +278,11 @@ export class ShopifyClient {
     };
   }
 
-  // Update product details (e.g. title, description)
-  async updateProduct(productId: string, input: { title?: string; descriptionHtml?: string }): Promise<void> {
+  // Update product details (e.g. title, description, tags)
+  async updateProduct(
+    productId: string,
+    input: { title?: string; descriptionHtml?: string; tags?: string[] }
+  ): Promise<void> {
     const admin = await this.getAdmin();
     const result = await executeGraphQLWithRetry<ProductUpdateData>(admin, UPDATE_PRODUCT_MUTATION, {
       input: {
@@ -308,6 +319,41 @@ export class ShopifyClient {
     const userErrors = result?.data?.productUpdateMedia?.mediaUserErrors || [];
     if (userErrors.length > 0) {
       throw new Error(`Shopify error updating alt text: ${userErrors.map((e) => e.message).join(", ")}`);
+    }
+  }
+
+  // Update a single variant's identifiers/measurements. In the 2024+ Admin API,
+  // `sku` and `weight` live on the variant's inventoryItem, while `barcode` is on
+  // the variant itself — productVariantsBulkUpdate accepts all three at once.
+  async updateVariant(
+    productId: string,
+    variantId: string,
+    input: { sku?: string; barcode?: string; weight?: { value: number; unit: WeightUnit } }
+  ): Promise<void> {
+    const admin = await this.getAdmin();
+
+    const inventoryItem: Record<string, unknown> = {};
+    if (input.sku !== undefined) inventoryItem.sku = input.sku;
+    if (input.weight !== undefined) {
+      inventoryItem.measurement = { weight: { value: input.weight.value, unit: input.weight.unit } };
+    }
+
+    const variant: Record<string, unknown> = { id: variantId };
+    if (input.barcode !== undefined) variant.barcode = input.barcode;
+    if (Object.keys(inventoryItem).length > 0) variant.inventoryItem = inventoryItem;
+
+    const result = await executeGraphQLWithRetry<ProductVariantsBulkUpdateData>(admin, UPDATE_VARIANTS_MUTATION, {
+      productId,
+      variants: [variant],
+    });
+
+    if (result.errors && result.errors.length > 0) {
+      throw new Error(`Shopify GraphQL error: ${result.errors.map((e) => e.message).join(", ")}`);
+    }
+
+    const userErrors = result?.data?.productVariantsBulkUpdate?.userErrors || [];
+    if (userErrors.length > 0) {
+      throw new Error(`Shopify error updating variant: ${userErrors.map((e) => e.message).join(", ")}`);
     }
   }
 
