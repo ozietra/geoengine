@@ -126,7 +126,20 @@ export default function ProductsList() {
    */
   const handleExportCSV = async () => {
     try {
-      const res = await fetch("/app/products?format=csv", { headers: { Accept: "text/csv" } });
+      // Explicitly attach the App Bridge session token. Relying on App Bridge to
+      // auto-patch fetch is unreliable here, so we fetch a fresh id token and
+      // send it as a Bearer header — authenticate.admin accepts that for the
+      // embedded session. Without it the loader rejects the request and the
+      // export fails.
+      const shopify = (window as unknown as { shopify?: { idToken?: () => Promise<string> } }).shopify;
+      const token = shopify?.idToken ? await shopify.idToken() : null;
+
+      const res = await fetch("/app/products?format=csv", {
+        headers: {
+          Accept: "text/csv",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
       if (!res.ok) {
         throw new Error(`Export failed (${res.status})`);
       }

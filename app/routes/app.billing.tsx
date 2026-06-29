@@ -91,6 +91,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       data: { plan: "FREE" },
     });
 
+    // Re-scan so the FREE limit re-locks products beyond the cap. This must
+    // happen here: the downgrade is applied synchronously in this action, so the
+    // billing loader's plan-change detection would see FREE === FREE and never
+    // enqueue. (Paid→paid downgrades go through billing.request and are caught
+    // by the loader instead.)
+    await scanQueue.enqueue(session.shop);
+
     return { success: true, plan: updatedProfile.plan };
   }
 
