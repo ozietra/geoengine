@@ -18,6 +18,12 @@ const PLAN_PRODUCT_LIMITS: Record<string, number> = {
   UNLIMITED: Infinity,
 };
 
+// How many over-limit products to persist as "locked" rows for the upgrade
+// prompt. The true total is tracked on StoreProfile.productIdCount; this only
+// bounds how many locked rows we store/show so a huge catalog on a small plan
+// doesn't create unbounded DB rows.
+const LOCKED_STORE_CAP = 100;
+
 // How many completed scans to keep per store (older ones are deleted)
 const MAX_SCANS_TO_KEEP = 30;
 
@@ -55,8 +61,18 @@ export async function runCatalogScan(shop: string): Promise<void> {
     const allProducts = await client.fetchAllProducts();
     const plan = storeProfile.plan || "FREE";
     const productLimit = PLAN_PRODUCT_LIMITS[plan] ?? 5;
-    const products = isFinite(productLimit) ? allProducts.slice(0, productLimit) : allProducts;
-    console.log(`[Scanner] Plan: ${plan} — scanning ${products.length} of ${allProducts.length} products.`);
+    // Deterministic order so the SAME products stay unlocked across re-scans. A
+    // merchant on a limited plan must not be able to rotate which products are
+    // free by rescanning (which would let them fix the whole catalog for free).
+    const sortedProducts = [...allProducts].sort((a, b) => a.id.localeCompare(b.id));
+    const products = isFinite(productLimit) ? sortedProducts.slice(0, productLimit) : sortedProducts;
+    // Over-limit products are persisted as locked upgrade prompts (capped).
+    const lockedProducts = isFinite(productLimit)
+      ? sortedProducts.slice(productLimit, productLimit + LOCKED_STORE_CAP)
+      : [];
+    console.log(
+      `[Scanner] Plan: ${plan} — scanning ${products.length} of ${allProducts.length} products (${lockedProducts.length} locked rows stored).`
+    );
 
     // 3. Evaluate store-wide policies
     const policyEvaluation = evaluateStorePolicies(settings);
@@ -242,13 +258,35 @@ export async function runCatalogScan(shop: string): Promise<void> {
       );
     }
 
-    // 7. Update Store Profile status to COMPLETED
+    // 6b. Persist locked (over-limit) products as minimal rows. They are never
+    // scored or issue-scanned — just listed as an upgrade prompt. createMany is
+    // used since they carry no issues/suggestions.
+    if (lockedProducts.length > 0) {
+      await prisma.productScan.createMany({
+        data: lockedProducts.map((p) => ({
+          scanId: scan.id,
+          shopifyProductId: p.id,
+          title: p.title,
+          handle: p.handle,
+          locked: true,
+          overallScore: 0,
+          titleScore: 0,
+          descriptionScore: 0,
+          mediaScore: 0,
+          variantScore: 0,
+          structuredDataScore: 0,
+        })),
+      });
+    }
+
+    // 7. Update Store Profile status to COMPLETED. productIdCount is the TRUE
+    // catalog total (incl. locked) so the UI can show "X of Y, upgrade to unlock".
     await prisma.storeProfile.update({
       where: { id: storeProfile.id },
       data: {
         scanStatus: "COMPLETED",
         overallScore: storeOverallScore,
-        productIdCount: totalCount,
+        productIdCount: allProducts.length,
         lastScannedAt: new Date(),
       },
     });
@@ -402,7 +440,9 @@ export async function runSingleProductScan(
 
   if (currentProductScan?.scanId) {
     const allScans = await prisma.productScan.findMany({
-      where: { scanId: currentProductScan.scanId },
+      // Exclude locked (over-limit) products: they are unscored placeholders and
+      // would drag the store average toward 0.
+      where: { scanId: currentProductScan.scanId, locked: false },
       select: { overallScore: true, titleScore: true, descriptionScore: true, mediaScore: true, variantScore: true, structuredDataScore: true },
     });
 

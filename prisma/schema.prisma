@@ -83,11 +83,16 @@ model ProductScan {
   mediaScore          Float
   variantScore        Float
   structuredDataScore Float
+  // Products beyond the store's plan limit are persisted but locked: they are
+  // listed (as an upgrade prompt) yet never scored, scanned, or fixable until
+  // the merchant upgrades. Excluded from all score/issue aggregates.
+  locked              Boolean        @default(false)
   issues              ScanIssue[]
   aiSuggestions       AISuggestion[]
 
   @@index([scanId])
   @@index([shopifyProductId])
+  @@index([locked])
 }
 
 model ScanIssue {

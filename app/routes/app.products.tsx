@@ -46,7 +46,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     }
 
     const allProducts = await prisma.productScan.findMany({
-      where: { scanId: latestScan.id },
+      // Locked (over-limit) products carry no scan data — exclude from the report.
+      where: { scanId: latestScan.id, locked: false },
       include: {
         _count: { select: { issues: { where: { resolved: false } } } },
       },
@@ -95,7 +96,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export default function ProductsList() {
-  const { products, totalCount, totalPages, search, page } = useLoaderData<typeof loader>();
+  const { products, totalCount, totalPages, search, page, plan, scannedCount, lockedTotal } =
+    useLoaderData<typeof loader>();
   const submit = useSubmit();
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
@@ -139,6 +141,32 @@ export default function ProductsList() {
 
   return (
     <s-page heading="Catalog AI Readiness Directory">
+      {lockedTotal > 0 && (
+        <div
+          style={{
+            padding: "12px 16px",
+            backgroundColor: "#fffbeb",
+            border: "1px solid #fcd34d",
+            borderRadius: "8px",
+            marginBottom: "16px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "12px",
+            flexWrap: "wrap",
+          }}
+        >
+          <span style={{ fontSize: "13px", color: "#92400e" }}>
+            🔒 Your <strong>{plan}</strong> plan scans {scannedCount} product(s).{" "}
+            <strong>{lockedTotal}</strong> more product(s) are locked. Upgrade to scan and optimize your
+            full catalog.
+          </span>
+          <s-link href="/app/billing">
+            <s-button variant="primary">Upgrade plan</s-button>
+          </s-link>
+        </div>
+      )}
+
       <s-section heading="Search Products">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: "16px" }}>
           <form
@@ -194,6 +222,38 @@ export default function ProductsList() {
                 </thead>
                 <tbody>
                   {products.map((product) => {
+                    // Locked (over-limit) products: shown greyed out as an upgrade
+                    // prompt, with no score, issues, or inspect link.
+                    if (product.locked) {
+                      return (
+                        <tr key={product.id} style={{ borderBottom: "1px solid #f3f4f6", fontSize: "13px", backgroundColor: "#fafafa" }}>
+                          <td style={{ padding: "12px 16px", fontWeight: "600", color: "#9ca3af" }}>
+                            🔒 {product.title}
+                          </td>
+                          <td style={{ padding: "12px 16px" }}>
+                            <span
+                              style={{
+                                fontSize: "12px",
+                                fontWeight: "700",
+                                padding: "4px 10px",
+                                borderRadius: "12px",
+                                backgroundColor: "#f3f4f6",
+                                color: "#9ca3af",
+                              }}
+                            >
+                              Locked
+                            </span>
+                          </td>
+                          <td style={{ padding: "12px 16px", color: "#9ca3af" }}>Upgrade to scan</td>
+                          <td style={{ padding: "12px 16px", textAlign: "right" }}>
+                            <s-link href="/app/billing">
+                              <s-button variant="secondary">Upgrade</s-button>
+                            </s-link>
+                          </td>
+                        </tr>
+                      );
+                    }
+
                     const status = getScoreColor(product.overallScore);
                     const issuesCount = product._count.issues;
                     return (

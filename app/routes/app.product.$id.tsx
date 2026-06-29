@@ -1,5 +1,5 @@
 import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "react-router";
-import { useLoaderData, useRouteError, useSubmit, useActionData, useNavigation } from "react-router";
+import { redirect, useLoaderData, useRouteError, useSubmit, useActionData, useNavigation } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { useState } from "react";
 import { authenticate } from "../shopify.server";
@@ -32,6 +32,12 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const details = await getProductScanDetails(id);
   if (!details) {
     throw new Response("Product scan detail not found", { status: 404 });
+  }
+
+  // Locked products are beyond the store's plan limit — they have no scan data
+  // or suggestions. Send the merchant to billing instead of an empty detail page.
+  if (details.locked) {
+    throw redirect("/app/billing");
   }
 
   return { details };

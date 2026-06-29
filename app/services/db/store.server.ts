@@ -93,7 +93,14 @@ export async function getProductScans(shop: string, options: { page?: number; se
   });
 
   if (!latestScan) {
-    return { products: [], totalCount: 0, totalPages: 0 };
+    return {
+      products: [],
+      totalCount: 0,
+      totalPages: 0,
+      plan: profile.plan || "FREE",
+      scannedCount: 0,
+      lockedTotal: 0,
+    };
   }
 
   const whereClause: Prisma.ProductScanWhereInput = {
@@ -107,7 +114,7 @@ export async function getProductScans(shop: string, options: { page?: number; se
     ];
   }
 
-  const [products, totalCount] = await Promise.all([
+  const [products, totalCount, scannedCount] = await Promise.all([
     prisma.productScan.findMany({
       where: whereClause,
       include: {
@@ -115,17 +122,27 @@ export async function getProductScans(shop: string, options: { page?: number; se
           select: { issues: { where: { resolved: false } } },
         },
       },
-      orderBy: { overallScore: "asc" }, // list worst products first
+      // Unlocked products first (worst score first within each group); locked
+      // upgrade-prompt rows sink to the bottom of the list.
+      orderBy: [{ locked: "asc" }, { overallScore: "asc" }],
       skip,
       take: limit,
     }),
     prisma.productScan.count({ where: whereClause }),
+    prisma.productScan.count({ where: { scanId: latestScan.id, locked: false } }),
   ]);
+
+  // True number of products that exist but are locked behind the plan limit,
+  // derived from the real catalog total tracked on the store profile.
+  const lockedTotal = Math.max(0, (profile.productIdCount || 0) - scannedCount);
 
   return {
     products,
     totalCount,
     totalPages: Math.ceil(totalCount / limit),
+    plan: profile.plan || "FREE",
+    scannedCount,
+    lockedTotal,
   };
 }
 
