@@ -115,20 +115,33 @@ export default function ProductsList() {
   };
 
   /**
-   * Trigger a CSV download.
+   * Trigger a CSV download from inside the embedded app.
    *
-   * In a Shopify embedded app the component runs inside an iframe.  A regular
-   * fetch() or React Router submission would stay inside that iframe and the
-   * browser would never show a Save-As dialog.  We instead navigate the *top*
-   * frame to the ?format=csv URL; Shopify's frame wrapper ignores plain file
-   * downloads and the browser handles it natively.
+   * Navigating window.top to a relative URL fails here: the top frame is
+   * admin.shopify.com, so "/app/products?format=csv" resolves against Shopify's
+   * domain instead of the app and never returns the file. Instead we fetch the
+   * CSV same-origin (App Bridge attaches the session token to the request so the
+   * loader authenticates), then download it client-side via a Blob — works
+   * regardless of the iframe/top-frame origins.
    */
-  const handleExportCSV = () => {
-    const exportUrl = `/app/products?format=csv`;
-    if (window.top) {
-      window.top.location.href = exportUrl;
-    } else {
-      window.location.href = exportUrl;
+  const handleExportCSV = async () => {
+    try {
+      const res = await fetch("/app/products?format=csv", { headers: { Accept: "text/csv" } });
+      if (!res.ok) {
+        throw new Error(`Export failed (${res.status})`);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `catalog-report-${new Date().toISOString().split("T")[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("[ProductsList] CSV export failed:", err);
+      alert("Could not export CSV. Please try again.");
     }
   };
 
