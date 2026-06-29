@@ -10,6 +10,7 @@ import {
   isTestCharge,
 } from "../shopify.server";
 import prisma from "~/db.server";
+import { scanQueue } from "~/services/worker/queue.server";
 
 const PLAN_NAME_BY_CODE = {
   STARTER: STARTER_PLAN,
@@ -36,13 +37,28 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     ? PLAN_NAME_TO_CODE[activeSubscription.name] ?? "FREE"
     : "FREE";
 
+  // Detect a plan change so we can re-scan: the locked/unlocked split is decided
+  // at scan time, so after an upgrade the catalog must be re-scanned for the new
+  // limit to take effect (more products unlocked) without the merchant manually
+  // pressing "Scan now".
+  const existing = await prisma.storeProfile.findUnique({
+    where: { shop: session.shop },
+    select: { plan: true },
+  });
+  const previousPlan = existing?.plan ?? null;
+
   const profile = await prisma.storeProfile.upsert({
     where: { shop: session.shop },
     update: { plan: planCode },
     create: { shop: session.shop, plan: planCode },
   });
 
-  return { profile };
+  if (previousPlan !== null && previousPlan !== planCode) {
+    // enqueue() de-dupes, so a refresh won't stack scans.
+    await scanQueue.enqueue(session.shop);
+  }
+
+  return { profile, planChanged: previousPlan !== null && previousPlan !== planCode };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -85,10 +101,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     // page) on success — that must bubble up untouched. We only catch genuine
     // errors so a failed charge (e.g. Shopify rejecting a live charge on a
     // development store) returns a readable message instead of a raw 500.
+    // Build the return URL from the ORIGIN this request actually arrived on,
+    // not process.env.SHOPIFY_APP_URL. If that env var is misconfigured (points
+    // at a different/stale Render service), Shopify would send the merchant to a
+    // dead domain after paying. The request origin is always the live app host.
+    const returnUrl = `${new URL(request.url).origin}/app/billing`;
+
     return await billing.request({
       plan: PLAN_NAME_BY_CODE[paidPlanCode],
       isTest: isTestCharge,
-      returnUrl: `${process.env.SHOPIFY_APP_URL}/app/billing`,
+      returnUrl,
     });
   } catch (error) {
     // A thrown Response is the redirect we want — re-throw it so the framework
@@ -112,7 +134,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function BillingPage() {
-  const { profile } = useLoaderData<typeof loader>();
+  const { profile, planChanged } = useLoaderData<typeof loader>();
   const actionData = useActionData<{ success: boolean; error?: string }>();
   const submit = useSubmit();
 
@@ -185,6 +207,24 @@ export default function BillingPage() {
 
   return (
     <s-page heading="Billing & Subscriptions">
+      {planChanged && (
+        <div
+          style={{
+            padding: "12px 16px",
+            backgroundColor: "#eff6ff",
+            border: "1px solid #93c5fd",
+            borderRadius: "6px",
+            color: "#1d4ed8",
+            fontSize: "13px",
+            marginBottom: "16px",
+            fontWeight: "500",
+          }}
+        >
+          Plan updated to {currentPlanCode}. We&rsquo;re re-scanning your catalog so the new product
+          limit takes effect — your Products directory will refresh automatically in a moment.
+        </div>
+      )}
+
       {actionData?.success === false && (
         <div
           style={{
